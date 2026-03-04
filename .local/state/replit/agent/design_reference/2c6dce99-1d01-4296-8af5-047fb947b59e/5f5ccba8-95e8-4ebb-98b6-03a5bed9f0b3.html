@@ -1,0 +1,1197 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Police Shift Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'police-blue': {
+                        50: '#eff6ff',
+                        100: '#dbeafe',
+                        500: '#3b82f6',
+                        600: '#2563eb',
+                        700: '#1d4ed8',
+                        800: '#1e40af',
+                        900: '#1e3a8a'
+                    }
+                },
+                fontFamily: {
+                    'sans': ['ui-sans-serif', 'system-ui', 'sans-serif']
+                }
+            }
+        }
+    };
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 font-sans">
+    <!-- @COMPONENT: AppLayout -->
+    <div class="min-h-screen flex">
+        <!-- @COMPONENT: Sidebar -->
+        <div class="bg-police-blue-900 text-white w-64 fixed h-full z-40 lg:static lg:translate-x-0 transform -translate-x-full transition-transform duration-300" id="sidebar">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <i class="fas fa-shield-alt text-2xl text-blue-300"></i>
+                    <div>
+                        <h1 class="text-xl font-bold">ShiftCommand</h1>
+                        <p class="text-sm text-blue-300">Police Shift Management</p>
+                    </div>
+                </div>
+                
+                <nav class="space-y-2">
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg bg-police-blue-800 text-blue-100" data-tab="dashboard">
+                        <i class="fas fa-tachometer-alt w-5"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-police-blue-800 transition-colors" data-tab="calendar">
+                        <i class="fas fa-calendar-alt w-5"></i>
+                        <span>Shift Calendar</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-police-blue-800 transition-colors" data-tab="officers">
+                        <i class="fas fa-users w-5"></i>
+                        <span>Officer Roster</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-police-blue-800 transition-colors" data-tab="templates">
+                        <i class="fas fa-clipboard-list w-5"></i>
+                        <span>Shift Templates</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-police-blue-800 transition-colors" data-tab="reports">
+                        <i class="fas fa-chart-bar w-5"></i>
+                        <span>Reports</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-police-blue-800 transition-colors" data-tab="settings">
+                        <i class="fas fa-cog w-5"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="absolute bottom-0 w-full p-6 border-t border-police-blue-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-police-blue-700 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium" data-bind="user.name">Sgt. Johnson</p>
+                        <p class="text-sm text-blue-300" data-bind="user.badge">Badge #4521</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent -->
+        <div class="flex-1 lg:ml-0">
+            <!-- @COMPONENT: TopBar -->
+            <header class="bg-white border-b border-slate-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button class="lg:hidden text-slate-600 hover:text-slate-900" id="sidebar-toggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900" id="page-title">Dashboard</h2>
+                            <p class="text-sm text-slate-600" data-bind="current.datetime">March 15, 2024 - 14:30</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <button class="relative p-2 text-slate-600 hover:text-slate-900">
+                                <i class="fas fa-bell"></i>
+                                <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 bg-slate-100 rounded-lg px-3 py-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm font-medium text-slate-700" data-bind="user.status">On Duty</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: TopBar -->
+
+            <!-- @COMPONENT: TabContent -->
+            <main class="p-6">
+                <!-- @COMPONENT: DashboardTab -->
+                <div id="dashboard-content" class="tab-content">
+                    <!-- Current Shift Status Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Active Officers</p>
+                                    <p class="text-3xl font-bold text-slate-900" data-bind="stats.activeOfficers">24</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-user-check text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-green-600 mt-2">↑ 2 from yesterday</p>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Coverage Gaps</p>
+                                    <p class="text-3xl font-bold text-slate-900" data-bind="stats.coverageGaps">2</p>
+                                </div>
+                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-red-600 mt-2">Beats 7, 12</p>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Pending Requests</p>
+                                    <p class="text-3xl font-bold text-slate-900" data-bind="stats.pendingRequests">5</p>
+                                </div>
+                                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-yellow-600 mt-2">3 swap requests</p>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Shift Coverage</p>
+                                    <p class="text-3xl font-bold text-slate-900" data-bind="stats.shiftCoverage">92%</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-blue-600 mt-2">Above target</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Current Shift Overview -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Current Shift Overview</h3>
+                                <p class="text-sm text-slate-600">Day Shift - 06:00 to 18:00</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <!-- @MAP: currentShiftOfficers.map(officer => ( -->
+                                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-user text-police-blue-600"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-slate-900" data-mock="true">Officer Martinez</p>
+                                                <p class="text-sm text-slate-600" data-mock="true">Beat 3 - Patrol</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Active</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-user text-police-blue-600"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-slate-900" data-mock="true">Officer Chen</p>
+                                                <p class="text-sm text-slate-600" data-mock="true">Beat 1 - Traffic</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Active</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-user text-police-blue-600"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-slate-900" data-mock="true">Officer Thompson</p>
+                                                <p class="text-sm text-slate-600" data-mock="true">Beat 5 - Community</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">Break</span>
+                                        </div>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Events -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Upcoming Events & Changes</h3>
+                                <p class="text-sm text-slate-600">Next 24 hours</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <div class="flex items-start space-x-4">
+                                        <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" data-mock="true">Shift Change - Night Shift</p>
+                                            <p class="text-sm text-slate-600" data-mock="true">Today at 18:00 - 15 officers scheduled</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start space-x-4">
+                                        <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" data-mock="true">Training Session</p>
+                                            <p class="text-sm text-slate-600" data-mock="true">Tomorrow at 09:00 - 8 officers</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start space-x-4">
+                                        <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" data-mock="true">Coverage Alert</p>
+                                            <p class="text-sm text-slate-600" data-mock="true">Beat 7 needs coverage Sunday 14:00-22:00</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start space-x-4">
+                                        <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" data-mock="true">Overtime Approved</p>
+                                            <p class="text-sm text-slate-600" data-mock="true">Officer Williams - Beat 4 extended shift</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-6">Quick Actions</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <button class="flex items-center space-x-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" data-event="click:createShift">
+                                <i class="fas fa-plus-circle text-police-blue-600"></i>
+                                <span class="font-medium text-slate-900">Create Shift</span>
+                            </button>
+                            
+                            <button class="flex items-center space-x-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" data-event="click:assignOfficer">
+                                <i class="fas fa-user-plus text-police-blue-600"></i>
+                                <span class="font-medium text-slate-900">Assign Officer</span>
+                            </button>
+                            
+                            <button class="flex items-center space-x-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" data-event="click:viewCalendar">
+                                <i class="fas fa-calendar-check text-police-blue-600"></i>
+                                <span class="font-medium text-slate-900">View Calendar</span>
+                            </button>
+                            
+                            <button class="flex items-center space-x-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors" data-event="click:generateReport">
+                                <i class="fas fa-file-export text-police-blue-600"></i>
+                                <span class="font-medium text-slate-900">Export Report</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DashboardTab -->
+
+                <!-- @COMPONENT: CalendarTab -->
+                <div id="calendar-content" class="tab-content hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                        <div class="p-6 border-b border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Shift Calendar</h3>
+                                    <p class="text-sm text-slate-600">March 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <button class="p-2 text-slate-600 hover:text-slate-900">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="px-4 py-2 bg-police-blue-600 text-white rounded-lg text-sm font-medium">Today</button>
+                                    <button class="p-2 text-slate-600 hover:text-slate-900">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <!-- Calendar Grid -->
+                            <div class="grid grid-cols-7 gap-1">
+                                <!-- Calendar Headers -->
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Sun</div>
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Mon</div>
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Tue</div>
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Wed</div>
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Thu</div>
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Fri</div>
+                                <div class="p-3 text-center text-sm font-medium text-slate-600">Sat</div>
+
+                                <!-- Calendar Days -->
+                                <!-- @MAP: calendarDays.map(day => ( -->
+                                <div class="border border-slate-200 h-24 p-2">
+                                    <div class="text-sm font-medium text-slate-600 mb-1" data-mock="true">15</div>
+                                    <div class="space-y-1">
+                                        <div class="text-xs bg-blue-100 text-blue-800 px-1 rounded" data-mock="true">Day: 8</div>
+                                        <div class="text-xs bg-gray-100 text-gray-800 px-1 rounded" data-mock="true">Night: 6</div>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                                
+                                <div class="border border-slate-200 h-24 p-2 bg-slate-50">
+                                    <div class="text-sm font-medium text-slate-400 mb-1">28</div>
+                                </div>
+                                
+                                <div class="border border-slate-200 h-24 p-2 bg-slate-50">
+                                    <div class="text-sm font-medium text-slate-400 mb-1">29</div>
+                                </div>
+                                
+                                <div class="border border-slate-200 h-24 p-2 bg-slate-50">
+                                    <div class="text-sm font-medium text-slate-400 mb-1">1</div>
+                                </div>
+                                
+                                <div class="border border-slate-200 h-24 p-2 bg-slate-50">
+                                    <div class="text-sm font-medium text-slate-400 mb-1">2</div>
+                                </div>
+                                
+                                <div class="border border-slate-200 h-24 p-2">
+                                    <div class="text-sm font-medium text-slate-600 mb-1">3</div>
+                                    <div class="space-y-1">
+                                        <div class="text-xs bg-blue-100 text-blue-800 px-1 rounded">Day: 10</div>
+                                        <div class="text-xs bg-gray-100 text-gray-800 px-1 rounded">Night: 8</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border border-slate-200 h-24 p-2">
+                                    <div class="text-sm font-medium text-slate-600 mb-1">4</div>
+                                    <div class="space-y-1">
+                                        <div class="text-xs bg-blue-100 text-blue-800 px-1 rounded">Day: 9</div>
+                                        <div class="text-xs bg-gray-100 text-gray-800 px-1 rounded">Night: 7</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border border-slate-200 h-24 p-2">
+                                    <div class="text-sm font-medium text-slate-600 mb-1">5</div>
+                                    <div class="space-y-1">
+                                        <div class="text-xs bg-red-100 text-red-800 px-1 rounded">Gap: Beat 7</div>
+                                        <div class="text-xs bg-blue-100 text-blue-800 px-1 rounded">Day: 8</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shift Legend -->
+                    <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h4 class="font-semibold text-slate-900 mb-4">Shift Legend</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 bg-blue-100 border border-blue-200 rounded"></div>
+                                <span class="text-sm text-slate-700">Day Shift</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
+                                <span class="text-sm text-slate-700">Night Shift</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 bg-yellow-100 border border-yellow-200 rounded"></div>
+                                <span class="text-sm text-slate-700">Weekend</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 bg-red-100 border border-red-200 rounded"></div>
+                                <span class="text-sm text-slate-700">Coverage Gap</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: CalendarTab -->
+
+                <!-- @COMPONENT: OfficersTab -->
+                <div id="officers-content" class="tab-content hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                        <div class="p-6 border-b border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Officer Roster</h3>
+                                    <p class="text-sm text-slate-600">32 total officers</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <input type="text" placeholder="Search officers..." class="px-4 py-2 border border-slate-300 rounded-lg text-sm">
+                                    <button class="px-4 py-2 bg-police-blue-600 text-white rounded-lg text-sm font-medium">
+                                        <i class="fas fa-plus mr-2"></i>Add Officer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="text-left p-4 font-medium text-slate-900">Officer</th>
+                                        <th class="text-left p-4 font-medium text-slate-900">Badge</th>
+                                        <th class="text-left p-4 font-medium text-slate-900">Department</th>
+                                        <th class="text-left p-4 font-medium text-slate-900">Status</th>
+                                        <th class="text-left p-4 font-medium text-slate-900">Current Assignment</th>
+                                        <th class="text-left p-4 font-medium text-slate-900">Next Shift</th>
+                                        <th class="text-left p-4 font-medium text-slate-900">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    <!-- @MAP: officers.map(officer => ( -->
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-user text-police-blue-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900" data-mock="true">Officer Martinez</p>
+                                                    <p class="text-sm text-slate-600" data-mock="true">Maria.Martinez@pd.gov</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">#4523</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Patrol Division</td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">On Duty</span>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Beat 3 - Patrol</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Tomorrow 18:00</td>
+                                        <td class="p-4">
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm font-medium">Edit</button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-user text-police-blue-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900" data-mock="true">Officer Chen</p>
+                                                    <p class="text-sm text-slate-600" data-mock="true">David.Chen@pd.gov</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">#4521</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Traffic Division</td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">On Duty</span>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Beat 1 - Traffic</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Today 18:00</td>
+                                        <td class="p-4">
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm font-medium">Edit</button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-user text-police-blue-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900" data-mock="true">Officer Thompson</p>
+                                                    <p class="text-sm text-slate-600" data-mock="true">James.Thompson@pd.gov</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">#4519</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Community Relations</td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">Break</span>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Beat 5 - Community</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Tomorrow 06:00</td>
+                                        <td class="p-4">
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm font-medium">Edit</button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-police-blue-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-user text-police-blue-600"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900" data-mock="true">Officer Williams</p>
+                                                    <p class="text-sm text-slate-600" data-mock="true">Sarah.Williams@pd.gov</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">#4517</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Patrol Division</td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-1 bg-slate-100 text-slate-800 text-xs font-medium rounded-full">Off Duty</span>
+                                        </td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Beat 4 - Patrol</td>
+                                        <td class="p-4 text-sm text-slate-600" data-mock="true">Today 22:00</td>
+                                        <td class="p-4">
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm font-medium">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <!-- @END_MAP )) -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="p-6 border-t border-slate-200">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm text-slate-600">Showing 4 of 32 officers</p>
+                                <div class="flex items-center space-x-2">
+                                    <button class="px-3 py-1 border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50">Previous</button>
+                                    <button class="px-3 py-1 bg-police-blue-600 text-white rounded text-sm">1</button>
+                                    <button class="px-3 py-1 border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50">2</button>
+                                    <button class="px-3 py-1 border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: OfficersTab -->
+
+                <!-- @COMPONENT: TemplatesTab -->
+                <div id="templates-content" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Shift Templates -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-semibold text-slate-900">Shift Templates</h3>
+                                    <button class="px-4 py-2 bg-police-blue-600 text-white rounded-lg text-sm font-medium">
+                                        <i class="fas fa-plus mr-2"></i>New Template
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <!-- @MAP: shiftTemplates.map(template => ( -->
+                                    <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="font-medium text-slate-900" data-mock="true">Standard Day Shift</h4>
+                                                <p class="text-sm text-slate-600" data-mock="true">06:00 - 18:00 • 12 officers</p>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-police-blue-600 hover:text-police-blue-700 text-sm">Edit</button>
+                                                <button class="text-slate-400 hover:text-slate-600 text-sm">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded" data-mock="true">Patrol</span>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded" data-mock="true">Traffic</span>
+                                            <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded" data-mock="true">Community</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="font-medium text-slate-900" data-mock="true">Night Shift</h4>
+                                                <p class="text-sm text-slate-600" data-mock="true">22:00 - 06:00 • 8 officers</p>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-police-blue-600 hover:text-police-blue-700 text-sm">Edit</button>
+                                                <button class="text-slate-400 hover:text-slate-600 text-sm">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded" data-mock="true">Patrol</span>
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded" data-mock="true">Emergency</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="font-medium text-slate-900" data-mock="true">Weekend Coverage</h4>
+                                                <p class="text-sm text-slate-600" data-mock="true">Variable • 10 officers</p>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-police-blue-600 hover:text-police-blue-700 text-sm">Edit</button>
+                                                <button class="text-slate-400 hover:text-slate-600 text-sm">Copy</button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded" data-mock="true">Patrol</span>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded" data-mock="true">Traffic</span>
+                                        </div>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Beat Assignments -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Beat Assignments</h3>
+                                <p class="text-sm text-slate-600">Current patrol coverage areas</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <!-- @MAP: beats.map(beat => ( -->
+                                    <div class="border border-slate-200 rounded-lg p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-slate-900" data-mock="true">Beat 1</h4>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Covered</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 mb-2" data-mock="true">Downtown District</p>
+                                        <p class="text-xs text-slate-500" data-mock="true">Officer Chen (Traffic)</p>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-slate-900" data-mock="true">Beat 2</h4>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Covered</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 mb-2" data-mock="true">Residential North</p>
+                                        <p class="text-xs text-slate-500" data-mock="true">Officer Davis (Patrol)</p>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-slate-900" data-mock="true">Beat 3</h4>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Covered</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 mb-2" data-mock="true">Commercial District</p>
+                                        <p class="text-xs text-slate-500" data-mock="true">Officer Martinez (Patrol)</p>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-slate-900" data-mock="true">Beat 4</h4>
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">Pending</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 mb-2" data-mock="true">Industrial Area</p>
+                                        <p class="text-xs text-slate-500" data-mock="true">Unassigned</p>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-slate-900" data-mock="true">Beat 5</h4>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">Covered</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 mb-2" data-mock="true">University Area</p>
+                                        <p class="text-xs text-slate-500" data-mock="true">Officer Thompson (Community)</p>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-3">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-slate-900" data-mock="true">Beat 6</h4>
+                                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">Gap</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600 mb-2" data-mock="true">Highway Patrol</p>
+                                        <p class="text-xs text-slate-500" data-mock="true">Coverage needed</p>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create Template Form -->
+                    <div class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-6">Create New Template</h3>
+                        <form class="grid grid-cols-1 md:grid-cols-2 gap-6" data-implementation="Form should validate required fields and create template">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Template Name</label>
+                                <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" placeholder="e.g., Holiday Coverage">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Shift Type</label>
+                                <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                    <option>Day Shift</option>
+                                    <option>Night Shift</option>
+                                    <option>Swing Shift</option>
+                                    <option>Weekend</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
+                                <input type="time" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">End Time</label>
+                                <input type="time" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Required Officers</label>
+                                <input type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" min="1" value="1">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Priority Level</label>
+                                <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                    <option>Normal</option>
+                                    <option>High</option>
+                                    <option>Critical</option>
+                                </select>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <button type="submit" class="px-6 py-2 bg-police-blue-600 text-white rounded-lg font-medium hover:bg-police-blue-700 transition-colors">
+                                    Create Template
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: TemplatesTab -->
+
+                <!-- @COMPONENT: ReportsTab -->
+                <div id="reports-content" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Report Generation -->
+                        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Generate Reports</h3>
+                                <p class="text-sm text-slate-600">Create custom shift and coverage reports</p>
+                            </div>
+                            <div class="p-6">
+                                <form class="space-y-6" data-implementation="Form should generate reports based on selected criteria">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">Report Type</label>
+                                            <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                                <option>Shift Coverage Summary</option>
+                                                <option>Officer Hours Report</option>
+                                                <option>Beat Coverage Analysis</option>
+                                                <option>Overtime Report</option>
+                                                <option>Availability Report</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">Time Period</label>
+                                            <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                                <option>Last 7 days</option>
+                                                <option>Last 30 days</option>
+                                                <option>This month</option>
+                                                <option>Custom range</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+                                            <input type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+                                            <input type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Filter Options</label>
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" class="rounded border-slate-300 text-police-blue-600 focus:ring-police-blue-500" checked>
+                                                <span class="ml-2 text-sm text-slate-700">Day Shifts</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" class="rounded border-slate-300 text-police-blue-600 focus:ring-police-blue-500" checked>
+                                                <span class="ml-2 text-sm text-slate-700">Night Shifts</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" class="rounded border-slate-300 text-police-blue-600 focus:ring-police-blue-500">
+                                                <span class="ml-2 text-sm text-slate-700">Weekend Only</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" class="rounded border-slate-300 text-police-blue-600 focus:ring-police-blue-500">
+                                                <span class="ml-2 text-sm text-slate-700">Overtime</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-4">
+                                        <button type="submit" class="px-6 py-2 bg-police-blue-600 text-white rounded-lg font-medium hover:bg-police-blue-700 transition-colors">
+                                            Generate Report
+                                        </button>
+                                        <button type="button" class="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                                            Export to PDF
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Recent Reports -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Recent Reports</h3>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <!-- @MAP: recentReports.map(report => ( -->
+                                    <div class="border border-slate-200 rounded-lg p-4">
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <p class="font-medium text-slate-900" data-mock="true">March Coverage Report</p>
+                                                <p class="text-sm text-slate-600" data-mock="true">Generated 3 hours ago</p>
+                                                <p class="text-xs text-slate-500 mt-1" data-mock="true">Shift Coverage Summary</p>
+                                            </div>
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-4">
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <p class="font-medium text-slate-900" data-mock="true">Officer Hours - Week 11</p>
+                                                <p class="text-sm text-slate-600" data-mock="true">Generated yesterday</p>
+                                                <p class="text-xs text-slate-500 mt-1" data-mock="true">Officer Hours Report</p>
+                                            </div>
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="border border-slate-200 rounded-lg p-4">
+                                        <div class="flex items-start justify-between">
+                                            <div>
+                                                <p class="font-medium text-slate-900" data-mock="true">Beat Analysis Q1</p>
+                                                <p class="text-sm text-slate-600" data-mock="true">Generated 2 days ago</p>
+                                                <p class="text-xs text-slate-500 mt-1" data-mock="true">Beat Coverage Analysis</p>
+                                            </div>
+                                            <button class="text-police-blue-600 hover:text-police-blue-700 text-sm">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Summary Stats -->
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Average Coverage</p>
+                                    <p class="text-2xl font-bold text-slate-900" data-bind="reports.avgCoverage">89.3%</p>
+                                </div>
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-blue-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-500 mt-2">Last 30 days</p>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Total Officer Hours</p>
+                                    <p class="text-2xl font-bold text-slate-900" data-bind="reports.totalHours">2,340</p>
+                                </div>
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-clock text-green-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-500 mt-2">This month</p>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Overtime Hours</p>
+                                    <p class="text-2xl font-bold text-slate-900" data-bind="reports.overtimeHours">156</p>
+                                </div>
+                                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-exclamation-circle text-yellow-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-500 mt-2">6.7% of total</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: ReportsTab -->
+
+                <!-- @COMPONENT: SettingsTab -->
+                <div id="settings-content" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- System Settings -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">System Settings</h3>
+                                <p class="text-sm text-slate-600">Configure shift management preferences</p>
+                            </div>
+                            <div class="p-6">
+                                <form class="space-y-6" data-implementation="Form should save system preferences">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Default Shift Duration (hours)</label>
+                                        <input type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="8" min="1" max="24">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Minimum Rest Period (hours)</label>
+                                        <input type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="8" min="4" max="16">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Overtime Threshold (hours/week)</label>
+                                        <input type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="40">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">Time Zone</label>
+                                        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500">
+                                            <option>Eastern Time (ET)</option>
+                                            <option>Central Time (CT)</option>
+                                            <option>Mountain Time (MT)</option>
+                                            <option>Pacific Time (PT)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="flex items-center">
+                                        <input type="checkbox" class="rounded border-slate-300 text-police-blue-600 focus:ring-police-blue-500" id="auto-approve">
+                                        <label for="auto-approve" class="ml-2 text-sm text-slate-700">Auto-approve shift swaps within same rank</label>
+                                    </div>
+                                    
+                                    <div class="flex items-center">
+                                        <input type="checkbox" class="rounded border-slate-300 text-police-blue-600 focus:ring-police-blue-500" id="conflict-alerts" checked>
+                                        <label for="conflict-alerts" class="ml-2 text-sm text-slate-700">Enable scheduling conflict alerts</label>
+                                    </div>
+                                    
+                                    <button type="submit" class="px-6 py-2 bg-police-blue-600 text-white rounded-lg font-medium hover:bg-police-blue-700 transition-colors">
+                                        Save Settings
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Notification Settings -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div class="p-6 border-b border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900">Notification Settings</h3>
+                                <p class="text-sm text-slate-600">Manage alert preferences</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium text-slate-900">Shift Assignment Changes</p>
+                                            <p class="text-sm text-slate-600">Get notified when shifts are modified</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-police-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-police-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium text-slate-900">Coverage Gaps</p>
+                                            <p class="text-sm text-slate-600">Alert when beats lack coverage</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-police-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-police-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium text-slate-900">Overtime Alerts</p>
+                                            <p class="text-sm text-slate-600">Warn when approaching overtime limits</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-police-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-police-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium text-slate-900">Shift Swap Requests</p>
+                                            <p class="text-sm text-slate-600">Notify about pending swap requests</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-police-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-police-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium text-slate-900">Email Notifications</p>
+                                            <p class="text-sm text-slate-600">Send alerts via email</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-police-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-police-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium text-slate-900">SMS Notifications</p>
+                                            <p class="text-sm text-slate-600">Send urgent alerts via SMS</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer">
+                                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-police-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-police-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Information -->
+                    <div class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-6">Department Information</h3>
+                        <form class="grid grid-cols-1 md:grid-cols-2 gap-6" data-implementation="Form should update department details">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Department Name</label>
+                                <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="Metropolitan Police Department">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Department Code</label>
+                                <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="MPD-001">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Chief of Police</label>
+                                <input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="Chief Robert Anderson">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Total Officers</label>
+                                <input type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="32" readonly>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Contact Phone</label>
+                                <input type="tel" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="(555) 123-4567">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Emergency Contact</label>
+                                <input type="tel" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-police-blue-500 focus:border-police-blue-500" value="911">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <button type="submit" class="px-6 py-2 bg-police-blue-600 text-white rounded-lg font-medium hover:bg-police-blue-700 transition-colors">
+                                    Update Information
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: SettingsTab -->
+            </main>
+            <!-- @END_COMPONENT: TabContent -->
+        </div>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: AppLayout -->
+
+    <script>
+    (function() {
+        // Tab switching functionality
+        const tabs = document.querySelectorAll('[data-tab]');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const pageTitle = document.getElementById('page-title');
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            tabs.forEach(tab => {
+                tab.classList.remove('bg-police-blue-800', 'text-blue-100');
+                tab.classList.add('hover:bg-police-blue-800');
+            });
+            
+            // Show selected tab content
+            const selectedContent = document.getElementById(tabName + '-content');
+            if (selectedContent) {
+                selectedContent.classList.remove('hidden');
+            }
+            
+            // Add active class to selected tab
+            const selectedTab = document.querySelector(`[data-tab="${tabName}"]`);
+            if (selectedTab) {
+                selectedTab.classList.add('bg-police-blue-800', 'text-blue-100');
+                selectedTab.classList.remove('hover:bg-police-blue-800');
+            }
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'calendar': 'Shift Calendar',
+                'officers': 'Officer Roster',
+                'templates': 'Shift Templates',
+                'reports': 'Reports',
+                'settings': 'Settings'
+            };
+            
+            if (pageTitle && titles[tabName]) {
+                pageTitle.textContent = titles[tabName];
+            }
+        }
+        
+        // Add click event listeners to tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabName = tab.getAttribute('data-tab');
+                showTab(tabName);
+            });
+        });
+        
+        // Mobile sidebar toggle
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
+        }
+        
+        // Initialize with dashboard tab
+        showTab('dashboard');
+        
+        // TODO: Implement business logic for:
+        // - Form submissions and validation
+        // - Data fetching and state management
+        // - Real-time notifications
+        // - Calendar interactions
+        // - Report generation
+        // - Officer scheduling logic
+        // - Conflict detection algorithms
+    })();
+    </script>
+</body>
+</html>
