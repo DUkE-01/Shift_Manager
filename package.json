@@ -1,0 +1,13 @@
+{
+  "name": "shift_manager.monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"dotnet run --project Shift_Manager.Server/Shift_Manager.Server.csproj\" \"npm --prefix shift_manager.client run dev\"",
+    "start": "concurrently \"dotnet run --project Shift_Manager.Server/Shift_Manager.Server.csproj --configuration Release\" \"npm --prefix shift_manager.client run build && npm --prefix shift_manager.client run preview\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

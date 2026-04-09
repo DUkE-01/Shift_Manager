@@ -1,0 +1,45 @@
+## ── Secrets (CRITICAL — never commit these) ──────────────────────────────────
+.env
+*.pfx
+*.p12
+*.key
+*.secrets.json
+appsettings.Production.json
+.claude/
+
+## ── Build output ──────────────────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+out/
+publish/
+
+## ── IDE ───────────────────────────────────────────────────────────────────────
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+.idea/
+
+## ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+## ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+.pnp
+.pnp.js
+
+## ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## ── NuGet ─────────────────────────────────────────────────────────────────────
+*.nupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/

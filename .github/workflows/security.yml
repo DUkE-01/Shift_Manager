@@ -1,0 +1,40 @@
+name: Security Scan
+
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore NuGet packages
+        run: dotnet restore
+
+      - name: Check vulnerable packages
+        run: dotnet list package --vulnerable
+
+      - name: Run SAST with Semgrep
+        uses: returntocorp/semgrep-action@v1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install npm dependencies
+        working-directory: shift_manager.client
+        run: npm ci
+
+      - name: ESLint scan
+        working-directory: shift_manager.client
+        run: npm run lint
+
+      - name: Dependency check
+        working-directory: shift_manager.client
+        run: npm audit --audit-level=moderate

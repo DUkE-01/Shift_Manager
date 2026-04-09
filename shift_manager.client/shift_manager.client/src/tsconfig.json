@@ -1,0 +1,27 @@
+{
+  "references": [ { "path": "./tsconfig.node.json" } ],
+  "include": [ "src/**/*", "shared/**/*" ],
+  "exclude": [ "node_modules", "dist", "**/*.test.ts", "vite.config.ts", "tailwind.config.ts" ],
+  "compilerOptions": {
+    "incremental": true,
+    "noEmit": true,
+    "module": "ESNext",
+    "target": "ES2020",
+    "strict": true,
+    "lib": [ "esnext", "dom", "dom.iterable" ],
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": "src",
+    "paths": {
+      "@/*": [ "./*" ],
+      "@shared/*": [ "../shared/*" ],
+      "@assets/*": [ "../src/assets/*" ]
+    }
+  }
+}

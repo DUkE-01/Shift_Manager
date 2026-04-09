@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shift_manager_api:local
+    container_name: shift_manager_api
+    ports:
+      - "7015:7015"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:7015
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=ShiftManagerDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;
+      - ConnectionStrings__Redis=redis:6379
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=ShiftManagerAPI
+      - Jwt__Audience=ShiftManagerClient
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - shift_manager_net
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: shift_manager_db
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD}"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: [ "CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "127.0.0.1", "-U", "sa", "-P", "${SA_PASSWORD}", "-Q", "select 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mssqldata:/var/opt/mssql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - shift_manager_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: shift_manager_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redisdata:/data
+    networks:
+      - shift_manager_net
+
+volumes:
+  mssqldata:
+  redisdata:
+
+networks:
+  shift_manager_net:
+    driver: bridge
