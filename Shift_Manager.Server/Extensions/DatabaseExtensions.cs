@@ -8,10 +8,8 @@ namespace Shift_Manager.Server.Extensions;
 
 public static class DatabaseExtensions
 {
-    /// <summary>
     /// Configura retry policy para conexiones a BD con Polly.
     /// Método renombrado para evitar colisión con AddResilientDatabase existente.
-    /// </summary>
     public static IServiceCollection AddResilientDatabaseWithPolly(this IServiceCollection services, IConfiguration configuration)
     {
         var retryPolicy = Policy

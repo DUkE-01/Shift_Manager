@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using Shift_Manager.Server.Domain.Entities;
 
@@ -58,14 +58,18 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.Property(x => x.RowVersion).IsRowVersion();
                 e.HasOne(x => x.Agente)
                     .WithMany(a => a.Turnos)
-                    .HasForeignKey(x => x.ID_Agente);
+                    .HasForeignKey(x => x.ID_Agente)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.HasOne(x => x.Cuadrante)
                     .WithMany(c => c.Turnos)
-                    .HasForeignKey(x => x.ID_Cuadrante);
+                    .HasForeignKey(x => x.ID_Cuadrante)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.HasIndex(x => x.ID_Agente);
                 e.HasIndex(x => x.ID_Cuadrante);
+                
                 // Tabla tiene triggers de auditoría → usar UPDATE sin OUTPUT
                 e.ToTable(tb => tb.HasTrigger("trg_Turnos_Auditoria"));
+ 
             });
 
             // ── HORARIOS ─────────────────────────────────────────────────────
@@ -85,10 +89,12 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.Property(x => x.Observaciones).HasMaxLength(300);
                 e.HasOne(x => x.Turno)
                     .WithMany(t => t.Horarios)
-                    .HasForeignKey(x => x.ID_Turno);
+                    .HasForeignKey(x => x.ID_Turno)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.HasOne(x => x.Cuadrante)
                     .WithMany(c => c.Horarios)
-                    .HasForeignKey(x => x.IdCuadrante);
+                    .HasForeignKey(x => x.IdCuadrante)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.ToTable(tb => tb.HasTrigger("trg_Horarios_Auditoria"));
             });
 
@@ -103,13 +109,16 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.Property(x => x.RowVersion).IsRowVersion();
                 e.HasOne(x => x.Agente)
                     .WithMany(a => a.Reportes)
-                    .HasForeignKey(x => x.ID_Agente);
+                    .HasForeignKey(x => x.ID_Agente)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.HasOne(x => x.Cuadrante)
                     .WithMany(c => c.Reportes)
-                    .HasForeignKey(x => x.ID_Cuadrante);
+                    .HasForeignKey(x => x.ID_Cuadrante)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.HasOne(x => x.Turno)
                     .WithMany(t => t.Reportes)
-                    .HasForeignKey(x => x.ID_Turno);
+                    .HasForeignKey(x => x.ID_Turno)
+                    .OnDelete(DeleteBehavior.Restrict);
                 e.HasIndex(x => x.ID_Agente);
                 e.HasIndex(x => x.ID_Turno);
                 e.HasIndex(x => x.ID_Cuadrante);
@@ -146,12 +155,12 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Token).HasMaxLength(500).IsRequired();
                 e.Property(x => x.Expiration).IsRequired();
-                e.Property(x => x.Created).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+                e.Property(x => x.Created).IsRequired().HasDefaultValueSql("GETDATE()");
                 
                 // Foreign key a Usuario
                 e.HasOne(x => x.Usuario)
                     .WithMany(u => u.RefreshTokens)
-                    .HasForeignKey("UserId")
+                    .HasForeignKey(x => x.UsuarioId)
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
             });

@@ -12,14 +12,26 @@ import Officers from "@/pages/officers";
 import Reports from "@/pages/reports";
 import { Login } from "@/pages/login";
 import NotFound from "@/pages/not-found";
-import { isLoggedIn } from "@/lib/api";
+import { isLoggedIn, getCurrentUser } from "@/lib/api";
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({ component: Component, allowedRoles }: { component: React.ComponentType, allowedRoles?: string[] }) {
     const [, navigate] = useLocation();
+    const user = getCurrentUser();
+
     useEffect(() => {
-        if (!isLoggedIn()) navigate("/login");
-    }, [navigate]);
+        if (!isLoggedIn()) {
+            navigate("/login");
+            return;
+        }
+
+        if (allowedRoles && !allowedRoles.includes(user.rol)) {
+            navigate("/schedule");
+        }
+    }, [navigate, user.rol, allowedRoles]);
+
     if (!isLoggedIn()) return null;
+    if (allowedRoles && !allowedRoles.includes(user.rol)) return null;
+
     return <Component />;
 }
 
@@ -27,9 +39,9 @@ function Router() {
     return (
         <Switch>
             <Route path="/login" component={Login} />
-            <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
+            <Route path="/" component={() => <ProtectedRoute component={Dashboard} allowedRoles={["Administrador", "Supervisor"]} />} />
             <Route path="/schedule" component={() => <ProtectedRoute component={Schedule} />} />
-            <Route path="/officers" component={() => <ProtectedRoute component={Officers} />} />
+            <Route path="/officers" component={() => <ProtectedRoute component={Officers} allowedRoles={["Administrador", "Supervisor"]} />} />
             <Route path="/reports" component={() => <ProtectedRoute component={Reports} />} />
             <Route component={NotFound} />
         </Switch>

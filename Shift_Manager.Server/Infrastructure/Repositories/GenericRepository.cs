@@ -1,10 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
 using Shift_Manager.Server.Application.Interfaces;
 using Shift_Manager.Server.Domain.Common.Exceptions;
 using Shift_Manager.Server.Infrastructure.Context;
-
 using System.Linq.Expressions;
+using Microsoft.Extensions.Logging;
 
 namespace Shift_Manager.Server.Infrastructure.Repositories;
 
@@ -13,12 +12,18 @@ namespace Shift_Manager.Server.Infrastructure.Repositories;
 /// Exceptions are wrapped in <see cref="RepositoryException"/> so callers
 /// don't need to handle EF internals.
 /// </summary>
-public class GenericRepository<T>(
-    ShiftManagerDbContext context,
-    ILogger<GenericRepository<T>> logger) : IGenericRepository<T>
-    where T : class
+public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
-    private readonly DbSet<T> _dbSet = context.Set<T>();
+    private readonly ShiftManagerDbContext context;
+    private readonly ILogger<GenericRepository<T>> logger;
+    private readonly DbSet<T> _dbSet;
+
+    public GenericRepository(ShiftManagerDbContext context, ILogger<GenericRepository<T>> logger)
+    {
+        this.context = context ?? throw new ArgumentNullException(nameof(context));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _dbSet = context.Set<T>();
+    }
 
     public async Task<IEnumerable<T>> GetAllAsync()
     {

@@ -4,25 +4,25 @@ import { determineShiftColumn, ShiftColumn } from "./shiftUtils";
 
 const BASE_URL = "";
 
-function getToken(): string | null {
+export function getToken(): string | null {
     return localStorage.getItem("access_token");
 }
 
-function setAuth(accessToken: string, refreshToken: string, rol: string, username: string) {
+export function setAuth(accessToken: string, refreshToken: string, rol: string, username: string) {
     localStorage.setItem("access_token", accessToken);
     localStorage.setItem("refresh_token", refreshToken);
     localStorage.setItem("rol", rol);
     localStorage.setItem("username", username);
 }
 
-function clearAuth() {
+export function clearAuth() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("rol");
     localStorage.removeItem("username");
 }
 
-async function fetchAPI(path: string, options: RequestInit = {}): Promise<Response> {
+export async function fetchAPI(path: string, options: RequestInit = {}): Promise<Response> {
     const token = getToken();
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -43,6 +43,9 @@ async function fetchAPI(path: string, options: RequestInit = {}): Promise<Respon
             if (refreshRes.ok) {
                 const data = await refreshRes.json();
                 localStorage.setItem("access_token", data.accessToken);
+                if (data.refreshToken) {
+                    localStorage.setItem("refresh_token", data.refreshToken); // Actualizamos el refresh token rotado por seguridad!
+                }
                 headers["Authorization"] = `Bearer ${data.accessToken}`;
                 return fetch(`${BASE_URL}${path}`, { ...options, headers });
             }
@@ -160,7 +163,14 @@ function mapAgente(a: any): Officer {
                 : "unavailable",
         phone: prop(a, "contacto", "Contacto") ?? undefined,
         circunscripcion: cuadranteToCircunscripcion(cuadranteId),
-        puestoAsignado: puestoMap[rango] ?? "Patrullero",
+        puestoAsignado: (() => {
+            const explicit = prop(a, "puestoAsignado", "PuestoAsignado");
+            if (explicit === 1) return "Palacio";
+            if (explicit === 2) return "Patrullero";
+            if (explicit === 3) return "Puesto Fijo";
+            if (typeof explicit === "string") return explicit;
+            return puestoMap[rango] ?? "Patrullero";
+        })(),
         cuadrantes: [String(cuadranteId)],
         createdAt: prop(a, "fechaCreacion", "FechaCreacion") ?? new Date().toISOString(),
     };
@@ -196,8 +206,8 @@ function inferShiftTypeFromHours(startIso: string, endIso?: string): string {
 }
 
 function mapTurno(t: any): Shift {
-    const inicio = prop(t, "fechaProgramadaInicio", "FechaProgramadaInicio") ?? "";
-    const fin = prop(t, "fechaProgramadaFin", "FechaProgramadaFin") ?? "";
+    const inicio = prop(t, "fechaProgramadaInicio", "FechaProgramadaInicio", "fechaInicio", "FechaInicio", "inicio", "Inicio") ?? "";
+    const fin = prop(t, "fechaProgramadaFin", "FechaProgramadaFin", "fechaFin", "FechaFin", "fin", "Fin") ?? "";
 
     const toTime = (dt: string) =>
         dt.includes("T") ? dt.split("T")[1]?.substring(0, 5) ?? "00:00"
@@ -220,7 +230,23 @@ function mapTurno(t: any): Shift {
     const obs = prop(t, "observaciones", "Observaciones") ?? "";
     const obsTypeMatch = typeof obs === "string" ? obs.match(/^\[([a-z_]+)\]/) : null;
     const explicitType = prop(t, "tipoTurno", "TipoTurno") ?? (obsTypeMatch ? obsTypeMatch[1] : null);
-    const shiftType = explicitType ?? inferShiftTypeFromHours(inicio, fin);
+    
+    let shiftType = explicitType ?? inferShiftTypeFromHours(inicio, fin);
+    
+    // Normalización para el frontend
+    const normalize = (val: string): string => {
+        const s = val.toLowerCase();
+        if (s.includes("vespertino") || s.includes("vesp")) {
+            const d = new Date(inicio);
+            const dow = isNaN(d.getTime()) ? 1 : d.getDay();
+            const isWeekend = dow === 0 || dow === 5 || dow === 6;
+            return isWeekend ? "vespertino_vd" : "vespertino_lj";
+        }
+        if (s.includes("nocturno") || s.includes("noche")) return "nocturno";
+        if (s.includes("diurno") || s.includes("mañana") || s.includes("tarde")) return "diurno";
+        return s;
+    };
+    shiftType = normalize(shiftType);
 
     const startIso = inicio || (date ? `${date}T${startTime}:00` : undefined);
     const endIso = fin || (date ? `${date}T${endTime}:00` : undefined);
@@ -268,7 +294,23 @@ function mapHorario(h: any, codeToId?: Map<string, string>): Shift {
     const date = prop(h, "fecha", "Fecha") ?? "";
     const startTime = toTime(prop(h, "horaInicio", "HoraInicio"));
     const endTime = toTime(prop(h, "horaFin", "HoraFin"));
-    const shiftType = prop(h, "tipoTurno", "TipoTurno") ?? "diurno";
+    
+    let shiftType = prop(h, "tipoTurno", "TipoTurno") ?? "diurno";
+    
+    // Normalización para el frontend
+    const s = shiftType.toLowerCase();
+    if (s.includes("vespertino") || s.includes("vesp")) {
+        const d = new Date(date);
+        const dow = isNaN(d.getTime()) ? 1 : d.getDay();
+        const isWeekend = dow === 0 || dow === 5 || dow === 6;
+        shiftType = isWeekend ? "vespertino_vd" : "vespertino_lj";
+    } else if (s.includes("nocturno") || s.includes("noche")) {
+        shiftType = "nocturno";
+    } else if (s.includes("diurno") || s.includes("mañana") || s.includes("tarde")) {
+        shiftType = "diurno";
+    } else {
+        shiftType = "diurno"; // Fallback para tipos desconocidos
+    }
 
     const startIso = date && startTime ? `${date}T${startTime}:00` : undefined;
     const endIso = date && endTime ? `${date}T${endTime}:00` : undefined;
@@ -349,6 +391,7 @@ export async function createOfficer(officer: Partial<Officer>): Promise<Officer>
         Rango: officer.rank,
         Contacto: officer.phone ?? null,
         ID_Cuadrante: Number(officer.cuadrantes?.[0] ?? 1),
+        PuestoAsignado: officer.puestoAsignado,
         Disponibilidad: officer.status === "on_duty",
         Activo: true,
     };
@@ -383,6 +426,7 @@ export async function updateOfficer(id: string, data: Partial<Officer>): Promise
         Rango: data.rank ?? prop(current, "rango", "Rango"),
         Contacto: data.phone ?? prop(current, "contacto", "Contacto"),
         ID_Cuadrante: newCuadrante,
+        PuestoAsignado: data.puestoAsignado ?? prop(current, "puestoAsignado", "PuestoAsignado"),
         Disponibilidad: data.status === "on_duty" ? true
             : data.status === "off_duty" ? false
                 : data.status === "unavailable" ? false
@@ -408,7 +452,12 @@ export async function getShifts(): Promise<Shift[]> {
         fetchAPI("/api/agentes"),
     ]);
 
-    const turnos = turnosRes.ok ? (await turnosRes.json()).map(mapTurno) : [];
+    const turnos = turnosRes.ok ? (await turnosRes.json()).map((raw: any) => {
+        const mapped = mapTurno(raw);
+        mapped.id = `t_${mapped.id}`;
+        return mapped;
+    }) : [];
+
     const horariosRaw = horariosRes.ok ? await horariosRes.json() : [];
     const agentesRaw = agentesRes.ok ? (await agentesRes.json()) : [];
 
@@ -419,29 +468,48 @@ export async function getShifts(): Promise<Shift[]> {
     });
 
     const horarios = horariosRaw.length > 0
-        ? horariosRaw.map((h: any) => mapHorario(h, codeToId))
+        ? horariosRaw.map((h: any) => {
+            const mapped = mapHorario(h, codeToId);
+            mapped.id = `h_${mapped.id}`;
+            return mapped;
+        })
         : [];
 
+    // Ahora ambos ecosistemas coexisten sin matarse por el mismo ID.
     const all = [...turnos, ...horarios].sort((a, b) =>
         new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     );
-    const seenId = new Set<string>();
-    const unique = all.filter(s => {
-        if (seenId.has(s.id)) return false;
-        seenId.add(s.id);
-        return true;
-    });
-    const latestByOfficerDate = new Map<string, Shift>();
-    for (const s of unique) {
-        if (!s.officerId || !s.date) continue;
-        const key = `${s.officerId}__${s.date}`;
-        if (!latestByOfficerDate.has(key)) latestByOfficerDate.set(key, s);
-    }
-    const withoutOfficer = unique.filter(s => !s.officerId || !s.date);
-    return [...latestByOfficerDate.values(), ...withoutOfficer];
+    
+    // Eliminamos la aniquilacion errónea "latestByOfficerDate" que borraba turnos que ocurrían en el mismo día.
+    return all;
 }
 
-export async function updateShift(id: string, shift: Partial<Shift>): Promise<Shift> {
+export async function updateShift(compositeId: string, shift: Partial<Shift>): Promise<Shift> {
+    const isHorario = compositeId.startsWith("h_");
+    const id = compositeId.replace("t_", "").replace("h_", "");
+
+    if (isHorario) {
+        // Enrutamiento correcto a Horarios si fue un Horario
+        const payload: any = { IdHorario: Number(id) };
+        if (shift.officerId) payload.IdAgente = Number(shift.officerId);
+        if (shift.beatId) payload.IdCuadrante = Number(shift.beatId);
+        if (shift.date) payload.Fecha = shift.date;
+        if (shift.startTime) payload.HoraInicio = `${shift.startTime}:00`;
+        if (shift.endTime) payload.HoraFin = `${shift.endTime}:00`;
+        if (shift.shiftType) payload.TipoTurno = shift.shiftType;
+        if (shift.notes !== undefined) payload.Observaciones = shift.notes;
+        
+        const res = await fetchAPI(`/api/horarios/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(await res.text() || "Error actualizando horario");
+        const mapRes = mapHorario(await res.json());
+        mapRes.id = `h_${mapRes.id}`;
+        return mapRes;
+    }
+
+    // Ruta estandar para Turnos
     const payload: any = {};
     if (shift.officerId) payload.ID_Agente = Number(shift.officerId);
     if (shift.beatId) payload.ID_Cuadrante = Number(shift.beatId);
@@ -463,11 +531,10 @@ export async function updateShift(id: string, shift: Partial<Shift>): Promise<Sh
         method: "PUT",
         body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Error actualizando turno");
-    }
-    return mapTurno(await res.json());
+    if (!res.ok) throw new Error(await res.text() || "Error actualizando turno");
+    const mapRes = mapTurno(await res.json());
+    mapRes.id = `t_${mapRes.id}`;
+    return mapRes;
 }
 
 export async function createShift(shift: Partial<Shift>): Promise<Shift> {
@@ -644,10 +711,14 @@ export async function createShiftPattern(params: {
     return created;
 }
 
-export async function deleteShift(id: string): Promise<void> {
-    const res = await fetchAPI(`/api/turnos/${id}`, { method: "DELETE" });
+export async function deleteShift(compositeId: string): Promise<void> {
+    const isHorario = compositeId.startsWith("h_");
+    const id = compositeId.replace("t_", "").replace("h_", "");
+    const endpoint = isHorario ? `/api/horarios/${id}` : `/api/turnos/${id}`;
+
+    const res = await fetchAPI(endpoint, { method: "DELETE" });
     if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Error eliminando turno");
+        throw new Error(text || "Error eliminando " + (isHorario ? "horario" : "turno"));
     }
 }

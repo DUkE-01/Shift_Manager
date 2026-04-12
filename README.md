@@ -1,213 +1,105 @@
-# Shift Manager — Server
+# Shift Manager 👮‍♂️🚑
 
-Backend API for the **Shift Manager** application: a police shift scheduling and incident reporting system built with ASP.NET Core 8 and SQL Server.
-
----
-
-## Table of Contents
-
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Local Setup](#local-setup)
-- [Project Structure](#project-structure)
-- [Configuration Reference](#configuration-reference)
-- [API Overview](#api-overview)
-- [Security Notes](#security-notes)
-- [Running in Production](#running-in-production)
+**Shift Manager** es una solución Full-Stack profesional diseñada para la gestión operativa de cuerpos de seguridad y emergencias. Permite la administración de turnos, seguimiento de agentes en tiempo real y generación de reportes de incidentes, todo bajo un estricto sistema de control de acceso basado en roles (RBAC) y circunscripciones geográficas.
 
 ---
 
-## Tech Stack
-
-| Concern | Library |
-|---|---|
-| Framework | ASP.NET Core 8 |
-| ORM | Entity Framework Core 8 (SQL Server) |
-| Auth | JWT Bearer + BCrypt password hashing |
-| Logging | Serilog (JSON to console + rolling file) |
-| Resilience | EF Core built-in retry-on-failure |
-| Rate Limiting | ASP.NET Core built-in `RateLimiter` |
-| Metrics | prometheus-net |
-| Validation | FluentValidation |
-| API Docs | Swagger / OpenAPI |
+### 📦 Portabilidad y Migración
+Si deseas mover este proyecto a otro dispositivo, consulta la [Guía de Migración](MIGRATION_GUIDE.md). He incluido un script llamado `prepare_copy.bat` en la raíz para ayudarte a limpiar archivos temporales antes de copiar el proyecto.
 
 ---
 
-## Prerequisites
+## 🚀 Arquitectura del Sistema
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8)
-- SQL Server 2019+ (or Azure SQL)
-- Node.js 20+ (for the React frontend)
+La aplicación está dividida en dos componentes principales:
+
+1.  **Backend (API):** Construido con **ASP.NET Core 8**, utilizando SQL Server con Entity Framework Core. Implementa seguridad JWT con rotación de refresh tokens y validaciones de reglas de negocio complejas.
+2.  **Frontend (SPA):** Una interfaz moderna y reactiva construida con **React + Vite** y **TypeScript**. Utiliza **Tailwind CSS** para un diseño premium, **Radix UI** para componentes accesibles y **TanStack Query** para la sincronización eficiente de datos.
 
 ---
 
-## Local Setup
+## ✨ Características Principales
 
-### 1. Clone and configure secrets
+-   🔐 **Autenticación Robusta:** Login con JWT, protección de rutas y manejo inteligente de sesiones.
+-   👥 **Gestión de Personal:** CRUD completo de agentes con perfiles detallados y rangos.
+-   📅 **Calendario de Turnos:** Sistema visual para asignar y supervisar turnos (Diurnos, Vespertinos, Nocturnos).
+-   📊 **Dashboard Inteligente:** Visualización de métricas críticas (Agentes activos, Gaps en turnos, Reportes pendientes).
+-   🗺️ **Control por Circunscripciones:**
+    -   **Administradores:** Visión y control global de todas las áreas.
+    -   **Supervisores:** Gestión limitada únicamente a los agentes y sectores de su jurisdicción.
+    -   **Agentes:** Acceso de solo lectura a sus propios turnos y reportes.
 
+---
+
+## 🛠️ Tecnologías
+
+### Backend
+- .NET 8 Web API
+- Entity Framework Core (SQL Server)
+- JWT Bearer Authentication
+- Serilog (Logging estructurado)
+- Swagger / OpenAPI (Documentación de API)
+
+### Frontend
+- React 18 + Vite
+- TypeScript
+- TanStack Query (React Query)
+- Tailwind CSS + Lucide Icons
+- Radix UI + Framer Motion (Animaciones)
+
+---
+
+## ⚙️ Configuración Local
+
+### 1. Clonar el repositorio
 ```bash
-git clone <repo-url>
+git clone https://github.com/tu-usuario/Shift_Manager.git
+cd Shift_Manager
+```
+
+### 2. Configurar Variables de Entorno
+Copia el archivo de plantilla y edítalo con tus credenciales locales:
+```bash
+cp .env.example .env
+```
+*Asegúrate de configurar `DB_CONNECTION` con tu instancia de SQL Server y generar una `JWT_KEY` segura (mínimo 32 caracteres).*
+
+### 3. Levantar el Backend
+```bash
 cd Shift_Manager.Server
-```
-
-Copy the environment template and fill in your values:
-
-```bash
-cp ../.env.example ../.env
-```
-
-Edit `../.env`:
-
-```env
-ConnectionStrings__DefaultConnection=Server=localhost;Database=ShiftManagerDB;Trusted_Connection=True;TrustServerCertificate=True
-JWT__KEY=your-random-minimum-32-char-secret-here
-JWT__ISSUER=ShiftManagerAPI
-JWT__AUDIENCE=ShiftManagerClient
-```
-
-> ⚠️ **Never commit `.env` or any file containing real secrets.**
-
-### 2. Apply database migrations
-
-```bash
 dotnet ef database update
-```
-
-### 3. Run the API
-
-```bash
 dotnet run
 ```
 
-The API starts at `https://localhost:7001` by default. Swagger is available at `/swagger` in development.
-
-### 4. Run with the frontend
-
+### 4. Levantar el Frontend
 ```bash
-# From the solution root
-dotnet run --project Shift_Manager.Server
-```
-
-The SPA will be served from `shift_manager.client/dist/public` if it exists, otherwise the API runs standalone.
-
----
-
-## Project Structure
-
-```
-Shift_Manager.Server/
-│
-├── Common/
-│   └── Exceptions/          # Domain exceptions (NotFoundException, ConflictException, etc.)
-│
-├── Configuration/
-│   └── AppOptions.cs        # Strongly-typed settings classes (JwtOptions, CorsOptions, etc.)
-│
-├── Context/
-│   └── ShiftManagerDbContext.cs  # EF Core DbContext with all entity configurations
-│
-├── Controllers/             # Thin HTTP controllers — no business logic
-│   ├── AgentesController.cs
-│   ├── AuthController.cs
-│   ├── HorariosController.cs
-│   ├── ReportesController.cs
-│   ├── TurnosController.cs
-│   └── HealthController.cs
-│
-├── DTOs/                    # Request/response data transfer objects
-│   ├── Auth/
-│   ├── Dashboard/
-│   └── Turnos/
-│
-├── Entities/                # EF Core entity classes (single source of truth)
-│
-├── Extensions/              # IServiceCollection and IApplicationBuilder extensions
-│   ├── ServiceCollectionExtensions.cs   # All DI registrations
-│   └── ApplicationBuilderExtensions.cs  # SPA static files
-│
-├── Features/                # Vertical slices: service + DTO per domain area
-│   ├── Agentes/             # IAgentService + AgentService + AgenteUpsertDto
-│   └── Turnos/              # ITurnoService + TurnoService
-│
-├── Middleware/
-│   ├── GlobalExceptionMiddleware.cs   # Maps domain exceptions → HTTP status codes
-│   └── SecurityHeadersMiddleware.cs   # X-Frame-Options, CSP, HSTS, etc.
-│
-├── Repositories/            # EF Core data access layer
-│   ├── Interfaces/          # Repository contracts
-│   ├── GenericRepository.cs
-│   ├── TurnoRepository.cs
-│   ├── HorarioRepository.cs
-│   └── DashboardRepository.cs
-│
-├── Services/
-│   ├── TokenService.cs      # JWT generation and refresh token lifecycle
-│   └── AuthService.cs       # Login orchestration
-│
-├── appsettings.json         # Non-secret defaults (JWT key must come from env)
-├── .env.example             # Secret template — copy to .env locally
-└── Program.cs               # Minimal startup: wires extensions, builds pipeline
+cd shift_manager.client
+npm install
+npm run dev
 ```
 
 ---
 
-## Configuration Reference
+## 🌐 Despliegue (Deployment)
 
-All settings can be overridden by environment variables using double-underscore notation (`JWT__KEY`, `ConnectionStrings__DefaultConnection`).
+### Frontend (Vercel)
+Este proyecto está optimizado para desplegarse en **Vercel**:
+1. Conecta tu repositorio de GitHub a Vercel.
+2. Configura el **Root Directory** como `shift_manager.client`.
+3. Añade la variable de entorno `VITE_API_URL` apuntando a la URL de tu API de producción.
 
-| Key | Description | Default |
-|---|---|---|
-| `Jwt:Key` | **Secret** signing key (≥32 chars). Use env var. | — |
-| `Jwt:Issuer` | JWT issuer claim | `ShiftManagerAPI` |
-| `Jwt:Audience` | JWT audience claim | `ShiftManagerClient` |
-| `Jwt:AccessTokenExpiryMinutes` | Access token TTL | `15` |
-| `Jwt:RefreshTokenExpiryDays` | Refresh token TTL | `7` |
-| `Cors:AllowedOrigins` | Array of allowed frontend origins | `localhost:5173` |
-| `RateLimit:PermitLimit` | Requests per window | `100` |
-| `RateLimit:WindowSeconds` | Rate limit window in seconds | `60` |
-| `ClientPath:DistFolder` | Relative path to built React app | `shift_manager.client/dist/public` |
+### Backend (.NET)
+Para el backend, se recomienda el uso de **Railway**, **Azure App Service** o **AWS**:
+1. Configura el servidor para leer las variables de entorno desde el sistema (no subas el `.env`).
+2. Setea `ASPNETCORE_ENVIRONMENT=Production`.
+3. Asegúrate de que las `CORS_ORIGINS` incluyan el dominio de tu frontend en Vercel.
 
 ---
 
-## API Overview
-
-| Route | Description | Auth |
-|---|---|---|
-| `POST /api/auth/login` | Login, returns access + refresh tokens | Public |
-| `POST /api/auth/refresh` | Rotate refresh token | Public |
-| `POST /api/auth/logout` | Revoke all refresh tokens for user | Required |
-| `GET /api/agentes` | List all agents | Required |
-| `POST /api/agentes` | Create agent | Required |
-| `GET /api/turnos` | Paginated shift list | Required |
-| `POST /api/turnos` | Create / upsert shift | Required |
-| `POST /api/turnos/batch` | Bulk create shifts | Required |
-| `GET /api/horarios` | List schedules | Required |
-| `GET /api/reportes` | List incident reports | Required |
-| `GET /api/health/live` | Liveness check | Public |
-| `GET /api/health/ready` | Readiness check (DB + memory) | Public |
-| `GET /metrics` | Prometheus metrics | Internal |
+## 🔒 Seguridad y Git
+**IMPORTANTE:** El archivo `.env` está incluido en el `.gitignore`. **Nunca** subas tus secretos (DB Connection strings o JWT Keys) a GitHub. Utiliza el panel de "Secrets" de tu plataforma de despliegue o GitHub Actions.
 
 ---
 
-## Security Notes
-
-- Passwords hashed with BCrypt (work factor 12)
-- Refresh tokens stored hashed (SHA-256) in DB
-- Refresh token rotation on every use
-- JWT `ClockSkew = TimeSpan.Zero` — no clock drift tolerance
-- Rate limiting on all endpoints (100 req/min, configurable)
-- Security headers: CSP, HSTS, X-Frame-Options, Referrer-Policy
-- CORS locked to explicit origins in production
-
----
-
-## Running in Production
-
-1. Set all required environment variables (especially `JWT__KEY` and `ConnectionStrings__DefaultConnection`)
-2. Set `ASPNETCORE_ENVIRONMENT=Production`
-3. Publish:
-   ```bash
-   dotnet publish -c Release -o ./publish
-   ```
-4. Run behind a reverse proxy (nginx or Azure App Service) — **do not expose Kestrel directly**
-5. Ensure `AllowedOrigins` in config matches your frontend domain
+## 📄 Licencia
+Este proyecto es de uso privado. Todos los derechos reservados.

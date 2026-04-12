@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using Shift_Manager.Server.Application.DTOs.Agentes;
 using Shift_Manager.Server.Application.DTOs.Dashboard;
 using Shift_Manager.Server.Application.DTOs.Turnos;
 using Shift_Manager.Server.Application.Interfaces;
 using Shift_Manager.Server.Infrastructure.Context;
+using Shift_Manager.Server.Domain.Common.Helpers;
 
 namespace Shift_Manager.Server.Infrastructure.Repositories
 {
@@ -17,38 +18,56 @@ namespace Shift_Manager.Server.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<DashboardStatsDTO> GetEstadisticasAsync()
+        public async Task<DashboardStatsDTO> GetEstadisticasAsync(int? circunscripcion = null)
         {
             var hoy = DateOnly.FromDateTime(DateTime.Today);
+            
+            var agentesQuery = _context.Agentes.AsQueryable();
+            var horariosQuery = _context.Horarios.AsQueryable();
+            var cuadrantesQuery = _context.Cuadrantes.AsQueryable();
+
+            if (circunscripcion.HasValue)
+            {
+                var idsValidos = CuadranteMapping.GetCuadrantesByCircunscripcion(circunscripcion.Value).ToList();
+                agentesQuery = agentesQuery.Where(a => idsValidos.Contains(a.ID_Cuadrante));
+                horariosQuery = horariosQuery.Where(h => idsValidos.Contains(h.IdCuadrante));
+                cuadrantesQuery = cuadrantesQuery.Where(c => idsValidos.Contains(c.ID_Cuadrante));
+            }
 
             return new DashboardStatsDTO
             {
-                TotalAgentes = await _context.Agentes.CountAsync(),
+                TotalAgentes = await agentesQuery.CountAsync(),
 
-                TurnosHoy = await _context.Horarios
+                TurnosHoy = await horariosQuery
                     .Where(h => h.Fecha == hoy)
                     .CountAsync(),
 
-                CuadrantesActivos = await _context.Cuadrantes.CountAsync(),
+                CuadrantesActivos = await cuadrantesQuery.CountAsync(),
 
-                HorariosActivos = await _context.Horarios
+                HorariosActivos = await horariosQuery
                     .Where(h => h.Estado == "Activo")
                     .CountAsync()
             };
         }
 
-        public async Task<IEnumerable<TurnoHoyDTO>> GetTurnosHoyAsync()
+        public async Task<IEnumerable<TurnoHoyDTO>> GetTurnosHoyAsync(int? circunscripcion = null)
         {
             var hoy = DateOnly.FromDateTime(DateTime.Today);
+            var query = _context.Horarios.Where(h => h.Fecha == hoy);
 
-            return await _context.Horarios
-                .Where(h => h.Fecha == hoy)
+            if (circunscripcion.HasValue)
+            {
+                var idsValidos = CuadranteMapping.GetCuadrantesByCircunscripcion(circunscripcion.Value).ToList();
+                query = query.Where(h => idsValidos.Contains(h.IdCuadrante));
+            }
+
+            return await query
                 .Include(h => h.Turno)
                 .Include(h => h.Cuadrante)
                 .Select(h => new TurnoHoyDTO
                 {
-                    Agente = h.Turno.Agente.Nombre,
-                    Cuadrante = h.Cuadrante.Nombre,
+                    Agente = h.Turno!.Agente!.Nombre!,
+                    Cuadrante = h.Cuadrante!.Nombre,
                     Turno = h.TipoTurno,
                     HoraInicio = h.HoraInicio,
                     HoraFin = h.HoraFin
@@ -56,17 +75,35 @@ namespace Shift_Manager.Server.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<AgenteActivoDTO>> GetAgentesActivosAsync()
+        public async Task<IEnumerable<AgenteActivoDTO>> GetAgentesActivosAsync(int? circunscripcion = null)
         {
-            return await _context.Agentes
+            var query = _context.Agentes.AsQueryable();
+
+            if (circunscripcion.HasValue)
+            {
+                var idsValidos = CuadranteMapping.GetCuadrantesByCircunscripcion(circunscripcion.Value).ToList();
+                query = query.Where(a => idsValidos.Contains(a.ID_Cuadrante));
+            }
+
+            query = query.Where(a => a.Activo && a.Disponibilidad);
+
+            var result = await query
                 .Include(a => a.Cuadrante)
-                .Select(a => new AgenteActivoDTO
-                {
-                    IdAgente = a.ID_Agente.ToString(),
-                    Nombre = a.Nombre,
-                    Cuadrante = a.Cuadrante.Nombre
-                })
                 .ToListAsync();
+
+            return result.Select(a => new AgenteActivoDTO
+            {
+                IdAgente = a.ID_Agente.ToString(),
+                Nombre = a.Nombre ?? "N/A",
+                Cuadrante = a.Cuadrante!.Nombre,
+                PuestoAsignado = a.PuestoAsignado switch
+                {
+                    1 => "Palacio",
+                    2 => "Patrullero",
+                    3 => "Puesto Fijo",
+                    _ => "Patrullero"
+                }
+            });
         }
     }
 }

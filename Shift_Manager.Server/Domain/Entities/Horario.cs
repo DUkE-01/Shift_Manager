@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 using Shift_Manager.Server.Domain.Entities.Common;
 
@@ -7,7 +7,6 @@ namespace Shift_Manager.Server.Domain.Entities
     public class Horario : IAuditable
     {
         public int IdHorario { get; set; }
-
         public string IdAgente { get; set; } = string.Empty;
 
         public DateOnly Fecha { get; set; }

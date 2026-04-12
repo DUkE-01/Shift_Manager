@@ -1,25 +1,13 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.RateLimiting;
-using ShiftManagerCors = Shift_Manager.Server.Configuration.CorsOptions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Formatting.Json;
 using Shift_Manager.Server.Configuration;
-using Shift_Manager.Server.Infrastructure.Context;
-using Shift_Manager.Server.Middleware;
-using Shift_Manager.Server.Infrastructure.Repositories;
-using Shift_Manager.Server.Application.Interfaces;
-using Shift_Manager.Server.Application.DTOs;
 using Shift_Manager.Server.Extensions;
-using Swashbuckle.AspNetCore;
+using Shift_Manager.Server.Middleware;
+using ShiftManagerCors = Shift_Manager.Server.Configuration.CorsOptions;
 
-using StackExchange.Redis;
-
-// Serilog PRIMERO
+// Serilog primero
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production")
@@ -32,81 +20,74 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("🚀 Iniciando Shift Manager API");
+    Log.Information("✅ Iniciando Shift Manager API");
 
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog();
 
-    // Cargar opciones
+    // Opciones de configuración
     builder.Services.AddAppOptions(builder.Configuration);
 
-    // Redis (graceful)
-    var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
-    try
-    {
-        builder.Services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect(redisConnection));
-        Log.Information("✅ Redis conectado: {RedisConnection}", redisConnection);
-    }
-    catch (Exception ex)
-    {
-        Log.Warning(ex, "⚠️ Redis no disponible. Rate limiting en memoria");
-    }
-
-    // Database & Repos
+    // Base de datos, repositorios y servicios de dominio
     builder.Services.AddResilientDatabase(builder.Configuration);
     builder.Services.AddRepositories();
-    builder.Services.AddDomainServices();
-    builder.Services.AddResilientHttpClients();
+    builder.Services.AddDomainServices(); // registra ITokenService, IAgentService, ITurnoService
 
-    // Usa tu extensión
-    builder.Services.AddApiControllers();
+    // Controllers con JSON
+    builder.Services.AddControllers()
+        .AddJsonOptions(o =>
+        {
+            o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        });
 
-    // Auth, CORS, Swagger, Rate Limiting
+    builder.Services.AddEndpointsApiExplorer();
+
+    // Auth, CORS, Swagger, Rate Limiting, Health
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddCorsPolicy(builder.Configuration, builder.Environment);
     builder.Services.AddSwaggerWithBearer(builder.Environment);
-    builder.Services.AddSwaggerGen(SwaggerConfig.Configure);
     builder.Services.AddGlobalRateLimiting(builder.Configuration);
     builder.Services.AddDefaultHealthChecks();
 
-
     var app = builder.Build();
 
-    // Pipeline (orden CRÍTICO)
+    // Conectividad a BD (aplica migraciones en Dev)
     await app.EnsureDatabaseConnectivityAsync();
+    await Shift_Manager.Server.Infrastructure.Seeders.AdminSeeder.SeedAsync(app.Services);
 
+    // Pipeline — ORDEN CRÍTICO
     if (app.Environment.IsDevelopment())
+    {
         app.UseSwaggerWithUi();
+        app.UseDeveloperExceptionPage();
+    }
 
-    // Middlewares de seguridad/monitoring
-    app.UseRateLimiter();
-    app.UseMiddleware<GlobalExceptionMiddleware>();
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseMiddleware<RequestMetricsMiddleware>();
     app.UseSerilogRequestLogging();
 
     app.UseHttpsRedirection();
 
-    // Cors
+    // CORS debe ir ANTES de Auth
     app.UseCors(ShiftManagerCors.PolicyName);
 
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // Endpoints
+    app.UseRateLimiter();
+
     app.MapControllers();
     app.MapHealthChecks("/health");
     app.MapStaticFilesAndSpaFallback(app.Environment);
 
-    var port = app.Urls.FirstOrDefault()?.Split(':').Last() ?? "????";
-    Log.Information("✅ API ejecutándose en https://localhost:{Port}/swagger", port);
-
+    Log.Information("✅ API ejecutándose");
     await app.RunAsync();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "💥 Aplicación falló al iniciar");
+    Log.Fatal(ex, "❌ Aplicación falló al iniciar");
 }
 finally
 {

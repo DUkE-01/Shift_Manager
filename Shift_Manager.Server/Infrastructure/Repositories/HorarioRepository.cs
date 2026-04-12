@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using Shift_Manager.Server.Application.DTOs.Dashboard;
 using Shift_Manager.Server.Application.Interfaces;

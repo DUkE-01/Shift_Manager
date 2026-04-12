@@ -40,23 +40,31 @@ export function Sidebar() {
 
             {/* Nav items */}
             <div className="flex-1 px-4 py-6 space-y-2">
-                {navigationItems.map((item) => {
-                    const isActive = location === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`flex items-center px-3 py-2 rounded-lg transition-colors ${isActive
-                                    ? "bg-police-blue-800 text-white"
-                                    : "text-police-blue-300 hover:bg-police-blue-800 hover:text-white"
-                                }`}
-                            data-testid={item.testId}
-                        >
-                            <i className={`fas fa-${item.icon} w-5 mr-3`}></i>
-                            {item.name}
-                        </Link>
-                    );
-                })}
+                {navigationItems
+                    .filter(item => {
+                        const isOficial = user.rol === "Oficial" || user.rol === "Agente";
+                        if (isOficial) {
+                            return item.href === "/schedule" || item.href === "/reports";
+                        }
+                        return true;
+                    })
+                    .map((item) => {
+                        const isActive = location === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`flex items-center px-3 py-2 rounded-lg transition-colors ${isActive
+                                        ? "bg-police-blue-800 text-white"
+                                        : "text-police-blue-300 hover:bg-police-blue-800 hover:text-white"
+                                    }`}
+                                data-testid={item.testId}
+                            >
+                                <i className={`fas fa-${item.icon} w-5 mr-3`}></i>
+                                {item.name}
+                            </Link>
+                        );
+                    })}
             </div>
 
             {/* Footer con usuario y logout */}

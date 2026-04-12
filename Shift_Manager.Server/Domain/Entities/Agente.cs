@@ -1,4 +1,4 @@
-﻿using Shift_Manager.Server.Domain.Entities;
+using Shift_Manager.Server.Domain.Entities;
 
 using System.ComponentModel.DataAnnotations;
 
@@ -34,15 +34,15 @@ namespace Shift_Manager.Server.Domain.Entities
 
         public DateTime? FechaModificacion { get; set; }
 
-        public byte[] RowVersion { get; set; }
+        public byte[] RowVersion { get; set; } = null!;
 
-        public Cuadrante Cuadrante { get; set; }
+        public Cuadrante Cuadrante { get; set; } = null!;
 
-        public ICollection<Turno> Turnos { get; set; }
-        public ICollection<Horario> Horarios { get; set; }
-        public ICollection<Reporte> Reportes { get; set; }
+        public ICollection<Turno> Turnos { get; set; } = new List<Turno>();
+        public ICollection<Horario> Horarios { get; set; } = new List<Horario>();
+        public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
 
-        public ICollection<UsuarioSistema> UsuariosSistema { get; set; }
+        public ICollection<UsuarioSistema> UsuariosSistema { get; set; } = new List<UsuarioSistema>();
 
     }
 }

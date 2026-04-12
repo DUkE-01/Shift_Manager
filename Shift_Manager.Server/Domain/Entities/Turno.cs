@@ -1,4 +1,4 @@
-﻿using Shift_Manager.Server.Domain.Entities;
+using Shift_Manager.Server.Domain.Entities;
 
 using System.ComponentModel.DataAnnotations;
 
@@ -20,19 +20,16 @@ namespace Shift_Manager.Server.Domain.Entities
 
         public DateTime? FechaFinReal { get; set; }
 
-        public string Estado { get; set; }
-
+        public string Estado { get; set; } = string.Empty;
         public string? Observaciones { get; set; }
-
         public DateTime FechaCreacion { get; set; }
 
-        public byte[] RowVersion { get; set; }
+        public byte[] RowVersion { get; set; } = null!;
 
-        public Agente Agente { get; set; }
+        public Agente Agente { get; set; } = null!;
+        public Cuadrante Cuadrante { get; set; } = null!;
 
-        public Cuadrante Cuadrante { get; set; }
-
-        public ICollection<Reporte> Reportes { get; set; }
+        public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
 
         public ICollection<Horario> Horarios { get; set; } = new List<Horario>();
     }

@@ -1,13 +1,11 @@
-﻿namespace Shift_Manager.Server.Application.DTOs.Agentes
+namespace Shift_Manager.Server.Application.DTOs.Agentes
 {
     public class AgenteActivoDTO
     {
-        public string IdAgente { get; set; }
+        public required string IdAgente { get; set; }
+        public required string Nombre { get; set; }
+        public required string Cuadrante { get; set; }
 
-        public string Nombre { get; set; }
-
-        public string Cuadrante { get; set; }
-
-        public int? PuestoAsignado { get; set; }
+        public string? PuestoAsignado { get; set; }
     }
 }

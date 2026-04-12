@@ -1,21 +1,17 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using BCrypt.Net;
 using Shift_Manager.Server.Application.DTOs.Auth;
 using Shift_Manager.Server.Application.Services;
 using Shift_Manager.Server.Application.DTOs;
 using Shift_Manager.Server.Infrastructure.Context;
-
-using System.Security.Claims;
-using BCrypt.Net;
 using Shift_Manager.Server.Domain.Entities;
 
 namespace Shift_Manager.Server.Controllers;
 
-/// <summary>
-/// Handles authentication: login, token refresh, and logout.
-/// Kept thin — all token logic lives in <see cref="ITokenService"/>.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController(
@@ -24,7 +20,6 @@ public class AuthController(
     ILogger<AuthController> logger) : ControllerBase
 {
     // ─── POST /api/auth/login ─────────────────────────────────────────────────
-
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
@@ -36,95 +31,152 @@ public class AuthController(
 
         try
         {
-            // AsNoTracking + filter active only — never reveal whether account exists
-            var usuario = await db.UsuariosSistema
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Username == username && u.Activo);
+            var (usuario, error) = await ValidateUserAsync(username, request.Password);
 
-            if (usuario is null || !BCrypt.Net.BCrypt.Verify(request.Password, usuario.PasswordHash))
+            if (usuario is null)
+                return Unauthorized(new { error = error ?? "Credenciales inválidas." });
+
+            // CreateExecutionStrategy es obligatorio con EnableRetryOnFailure
+            LoginResponseDto? response = null;
+            var strategy = db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                logger.LogWarning("Failed login attempt for username: {Username}", username);
-                return Unauthorized(new { error = "Credenciales inválidas." });
-            }
+                await using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    var accessToken = tokenService.GenerateAccessToken(usuario);
+                    var refreshToken = tokenService.GenerateRefreshToken();
 
-            var accessToken = tokenService.GenerateAccessToken(usuario);
-            var refreshToken = tokenService.GenerateRefreshToken();
+                    db.RefreshTokens.Add(new RefreshToken
+                    {
+                        Token = tokenService.HashToken(refreshToken),
+                        UsuarioId = usuario.ID_Usuario,
+                        Expiration = DateTime.UtcNow.AddDays(7),
+                        Created = DateTime.UtcNow
+                    });
 
-            db.RefreshTokens.Add(new RefreshToken
-            {
-                Token = tokenService.HashToken(refreshToken),
-                UsuarioId = usuario.ID_Usuario,
-                Expiration = DateTime.UtcNow.AddDays(7),
-                Created = DateTime.UtcNow
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    response = new LoginResponseDto
+                    {
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken,
+                        Expiracion = DateTime.UtcNow.AddMinutes(15),
+                        Username = usuario.Username,
+                        Rol = usuario.Rol
+                    };
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             });
-            await db.SaveChangesAsync();
 
-            return Ok(new LoginResponseDto
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                Expiracion = DateTime.UtcNow.AddMinutes(15),
-                Username = usuario.Username,
-                Rol = usuario.Rol
-            });
+            logger.LogInformation("✅ Login exitoso: {Username} | ID: {UserId}",
+                usuario.Username, usuario.ID_Usuario);
+
+            return Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Internal error during login for user: {Username}", username);
-            return StatusCode(500, new { error = "Error interno del servidor." });
+            logger.LogError(ex, "❌ Error en login");
+            return StatusCode(500, new
+            {
+                error = ex.Message,
+                inner = ex.InnerException?.Message,
+                stack = ex.StackTrace
+            });
         }
     }
 
     // ─── POST /api/auth/refresh ───────────────────────────────────────────────
-
+    [EnableRateLimiting("refresh")]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.RefreshToken) || string.IsNullOrWhiteSpace(request.AccessToken))
-            return BadRequest(new { error = "Access token y refresh token requeridos." });
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            return BadRequest(new { error = "Refresh token requerido." });
 
         try
         {
-            var principal = tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
-            var userIdClaim = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int? userId = null;
+            if (!string.IsNullOrWhiteSpace(request.AccessToken))
+            {
+                var (uid, _) = await ValidateAccessTokenAsync(request.AccessToken);
+                userId = uid;
+            }
+            if (userId is null)
+            {
+                var hashed = tokenService.HashToken(request.RefreshToken);
+                var stored = await db.RefreshTokens.AsNoTracking()
+                    .FirstOrDefaultAsync(rt => rt.Token == hashed);
+                if (stored != null) userId = stored.UsuarioId;
+            }
+            if (userId is null)
+                return Unauthorized(new { error = "No se pudo identificar el usuario." });
 
-            if (!int.TryParse(userIdClaim, out var userId))
-                return Unauthorized(new { error = "Access token inválido." });
-
-            var isValid = await tokenService.ValidateRefreshTokenAsync(userId, request.RefreshToken);
-            if (!isValid)
+            if (!await tokenService.ValidateRefreshTokenAsync(userId.Value, request.RefreshToken))
                 return Unauthorized(new { error = "Refresh token inválido o expirado." });
 
-            // Revoke existing tokens for user and issue new ones
-            await tokenService.RevokeAllRefreshTokensAsync(userId);
-
-            var usuario = await db.UsuariosSistema.FindAsync(userId);
-            if (usuario is null) return Unauthorized(new { error = "Usuario no encontrado." });
-
-            var newAccessToken = tokenService.GenerateAccessToken(usuario);
-            var newRefreshToken = tokenService.GenerateRefreshToken();
-
-            db.RefreshTokens.Add(new RefreshToken
+            // CreateExecutionStrategy es obligatorio con EnableRetryOnFailure
+            object? refreshResult = null;
+            var strategy = db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                Token = tokenService.HashToken(newRefreshToken),
-                UsuarioId = userId,
-                Expiration = DateTime.UtcNow.AddDays(7),
-                Created = DateTime.UtcNow
+                await using var transaction = await db.Database.BeginTransactionAsync();
+                try
+                {
+                    await tokenService.RevokeAllRefreshTokensAsync(userId.Value);
+
+                    var usuario = await db.UsuariosSistema
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.ID_Usuario == userId.Value && u.Activo);
+
+                    if (usuario is null)
+                    {
+                        await transaction.RollbackAsync();
+                        return;
+                    }
+
+                    var newAccessToken = tokenService.GenerateAccessToken(usuario);
+                    var newRefreshToken = tokenService.GenerateRefreshToken();
+
+                    db.RefreshTokens.Add(new RefreshToken
+                    {
+                        Token = tokenService.HashToken(newRefreshToken),
+                        UsuarioId = userId.Value,
+                        Expiration = DateTime.UtcNow.AddDays(7),
+                        Created = DateTime.UtcNow
+                    });
+
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    refreshResult = new { accessToken = newAccessToken, refreshToken = newRefreshToken };
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             });
 
-            await db.SaveChangesAsync();
+            if (refreshResult is null)
+                return Unauthorized(new { error = "Usuario no encontrado o inactivo." });
 
-            return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
+            logger.LogInformation("🔄 Tokens renovados para usuario {UserId}", userId.Value);
+            return Ok(refreshResult);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error refreshing token");
+            logger.LogError(ex, "💥 Error renovando tokens");
             return StatusCode(500, new { error = "Error interno del servidor." });
         }
     }
 
     // ─── POST /api/auth/logout ────────────────────────────────────────────────
-
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
@@ -136,12 +188,83 @@ public class AuthController(
         try
         {
             await tokenService.RevokeAllRefreshTokensAsync(userId);
+            logger.LogInformation("🚪 Usuario {UserId} cerró sesión", userId);
             return Ok(new { message = "Sesión cerrada correctamente." });
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during logout for user {UserId}", userId);
+            logger.LogError(ex, "💥 Error durante logout para usuario {UserId}", userId);
             return StatusCode(500, new { error = "Error interno del servidor." });
         }
+    }
+
+    // ─── GET /api/auth/me ─────────────────────────────────────────────────────
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim is null || !int.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized(new { error = "Usuario no autenticado." });
+
+        try
+        {
+            var usuario = await db.UsuariosSistema
+                .AsNoTracking()
+                .Where(u => u.ID_Usuario == userId && u.Activo)
+                .Select(u => new
+                {
+                    u.ID_Usuario,
+                    u.Username,
+                    u.Rol,
+                    u.Activo
+                })
+                .FirstOrDefaultAsync();
+
+            if (usuario is null)
+                return Unauthorized(new { error = "Usuario no encontrado." });
+
+            return Ok(usuario);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "💥 Error obteniendo datos del usuario {UserId}", userId);
+            return StatusCode(500, new { error = "Error interno del servidor." });
+        }
+    }
+
+    // ─── PRIVATE METHODS ──────────────────────────────────────────────────────
+
+    private async Task<(UsuarioSistema? usuario, string? error)> ValidateUserAsync(
+        string username, string password)
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            return (null, "Credenciales inválidas.");
+
+        var usuario = await db.UsuariosSistema
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Username == username && u.Activo);
+
+        if (usuario is null)
+            return (null, "Credenciales inválidas.");
+
+        if (!BCrypt.Net.BCrypt.Verify(password, usuario.PasswordHash.Trim()))
+            return (null, "Credenciales inválidas.");
+
+        return (usuario, null);
+    }
+
+    private Task<(int? userId, string? error)> ValidateAccessTokenAsync(string accessToken)
+    {
+        var principal = tokenService.GetPrincipalFromExpiredToken(accessToken);
+        var userIdClaim = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            logger.LogWarning("❌ Access token inválido");
+            return Task.FromResult<(int? userId, string? error)>((null, "Access token inválido."));
+        }
+
+        return Task.FromResult<(int? userId, string? error)>((userId, null));
     }
 }

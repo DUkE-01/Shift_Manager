@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "composite": true
-  },
-  "include": [ "src/**/*", "shared/**/*" ],
-  "exclude": [ "node_modules", "dist", "vite.config.ts" ]
-}

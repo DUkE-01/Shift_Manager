@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -101,8 +101,8 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                var env = services.BuildServiceProvider().GetRequiredService<IWebHostEnvironment>();
-                options.RequireHttpsMetadata = !env.IsDevelopment();
+                var env = config.GetValue<string>("ASPNETCORE_ENVIRONMENT");
+                var isDevelopment = env == "Development";
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -116,15 +116,22 @@ public static class ServiceCollectionExtensions
                     ClockSkew = TimeSpan.FromMinutes(5)
                 };
 
-                options.Events = new JwtBearerEvents
+                if (isDevelopment)
                 {
-                    OnMessageReceived = context =>
+                    options.Events = new JwtBearerEvents
                     {
-                        context.Token = context.Request.Headers["Authorization"]
-                            .FirstOrDefault()?.Split(" ").Last();
-                        return Task.CompletedTask;
-                    }
-                };
+                        OnMessageReceived = context =>
+                        {
+                            var authHeader = context.Request.Headers["Swagger-Auth"].FirstOrDefault();
+                            if (!string.IsNullOrEmpty(authHeader))
+                            {
+                                // Remove 'Bearer ' if present, otherwise just take the string
+                                context.Token = authHeader.Split(' ').Last().Trim();
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
+                }
             });
 
         return services;
@@ -144,7 +151,7 @@ public static class ServiceCollectionExtensions
             o.AddPolicy(CorsOptions.PolicyName, policy =>
             {
                 if (env.IsDevelopment())
-                    policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                    policy.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 else
                 {
                     if (origins.Length > 0)
@@ -187,6 +194,25 @@ public static class ServiceCollectionExtensions
                         Window = TimeSpan.FromMinutes(1)
                     }));
 
+            options.AddPolicy("login", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+            options.AddPolicy("refresh", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.OnRejected = (context, cancellationToken) =>
             {
@@ -194,6 +220,8 @@ public static class ServiceCollectionExtensions
                 context.HttpContext.Response.Headers.Append("Retry-After", "1");
                 return default;
             };
+
+
         });
 
         return services;
@@ -219,16 +247,7 @@ public static class ServiceCollectionExtensions
                     c.IncludeXmlComments(xmlPath);
             }
 
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                Name = "Authorization",
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT",
-                In = ParameterLocation.Header,
-                Description = "Ingrese 'Bearer {token}' en el campo"
-            });
-
+            c.OperationFilter<BearerSecurityOperationFilter>();
         });
 
         return services;
@@ -274,12 +293,8 @@ public static class WebApplicationExtensions
         {
             var context = scope.ServiceProvider.GetRequiredService<ShiftManagerDbContext>();
 
-            if (app.Environment.IsDevelopment())
-            {
-                await context.Database.MigrateAsync();
-                logger.LogInformation("✅ Migraciones aplicadas");
-            }
-
+            // No aplicar MigrateAsync: la BD fue creada desde script SQL,
+            // no desde EF Migrations. Solo verificamos conectividad.
             if (await context.Database.CanConnectAsync())
                 logger.LogInformation("✅ Conexión a base de datos OK");
             else

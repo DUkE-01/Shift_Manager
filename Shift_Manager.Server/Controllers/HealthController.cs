@@ -63,7 +63,7 @@ public class HealthController : ControllerBase
     }
 
     [HttpGet("detailed")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Detailed()
     {
         var report = new

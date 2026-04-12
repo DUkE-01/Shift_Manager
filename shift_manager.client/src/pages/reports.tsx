@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { updateEmergencyReport } from "@/lib/api";
+import { updateEmergencyReport, getCurrentUser } from "@/lib/api";
 import { invalidateReportRelated } from "@/lib/queryClient";
 import { NewReportModal } from "@/components/modals/new-report-modal";
 import { EmergencyReport, Officer, Beat } from "@/lib/types";
 
 export default function Reports() {
+    const user = getCurrentUser();
+    const isOficial = user.rol === "Oficial" || user.rol === "Agente";
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [priorityFilter, setPriorityFilter] = useState("all");
@@ -67,7 +69,7 @@ export default function Reports() {
         const q = searchQuery.toLowerCase();
         const matchesSearch =
             r.reportNumber?.toLowerCase?.() ?? ""
-            r.description.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
             r.location.toLowerCase().includes(q) ||
             (r.callerName && r.callerName.toLowerCase().includes(q));
         return matchesSearch
@@ -128,11 +130,13 @@ export default function Reports() {
                         <h2 className="text-2xl font-bold text-gray-900">Reportes de Emergencia</h2>
                         <p className="text-gray-600 mt-1">Gestión de llamadas y reportes de emergencia</p>
                     </div>
-                    <div className="mt-4 sm:mt-0">
-                        <Button onClick={() => setIsNewReportModalOpen(true)} className="bg-red-600 hover:bg-red-700" data-testid="button-new-report">
-                            <Plus className="w-4 h-4 mr-2" />Nuevo Reporte
-                        </Button>
-                    </div>
+                    {!isOficial && (
+                        <div className="mt-4 sm:mt-0">
+                            <Button onClick={() => setIsNewReportModalOpen(true)} className="bg-red-600 hover:bg-red-700" data-testid="button-new-report">
+                                <Plus className="w-4 h-4 mr-2" />Nuevo Reporte
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Stats */}
@@ -302,18 +306,22 @@ export default function Reports() {
                                             </>
                                         ) : (
                                             <>
-                                                <Button variant="outline" size="sm" onClick={() => handleEditClick(report)} data-testid={`button-edit-${report.id}`}>
-                                                    <Edit className="h-4 w-4 mr-1" />Editar
-                                                </Button>
-                                                {report.status === "pending" && (
-                                                    <Select onValueChange={officerId => officerId && assignOfficerMutation.mutate({ reportId: report.id, officerId })}>
-                                                        <SelectTrigger className="w-32" data-testid={`select-assign-${report.id}`}><SelectValue placeholder="Asignar" /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {officers?.filter(o => o.status === "on_duty").map(o => (
-                                                                <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
+                                                {!isOficial && (
+                                                    <>
+                                                        <Button variant="outline" size="sm" onClick={() => handleEditClick(report)} data-testid={`button-edit-${report.id}`}>
+                                                            <Edit className="h-4 w-4 mr-1" />Editar
+                                                        </Button>
+                                                        {report.status === "pending" && (
+                                                            <Select onValueChange={officerId => officerId && assignOfficerMutation.mutate({ reportId: report.id, officerId })}>
+                                                                <SelectTrigger className="w-32" data-testid={`select-assign-${report.id}`}><SelectValue placeholder="Asignar" /></SelectTrigger>
+                                                                <SelectContent>
+                                                                    {officers?.filter(o => o.status === "on_duty").map(o => (
+                                                                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+                                                    </>
                                                 )}
                                                 {report.status === "assigned" && (
                                                     <Button variant="outline" size="sm" data-testid={`button-start-${report.id}`}

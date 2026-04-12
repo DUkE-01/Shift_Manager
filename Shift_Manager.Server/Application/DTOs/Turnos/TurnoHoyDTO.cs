@@ -1,12 +1,10 @@
-﻿namespace Shift_Manager.Server.Application.DTOs.Turnos
+namespace Shift_Manager.Server.Application.DTOs.Turnos
 {
     public class TurnoHoyDTO
     {
-        public string Agente { get; set; }
-
-        public string Cuadrante { get; set; }
-
-        public string Turno { get; set; }
+        public required string Agente { get; set; }
+        public required string Cuadrante { get; set; }
+        public required string Turno { get; set; }
 
         public TimeOnly HoraInicio { get; set; }
 

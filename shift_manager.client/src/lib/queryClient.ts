@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import {
     getOfficers, getBeats, getShifts,
     getEmergencyReports, getDashboardStats,
+    fetchAPI, clearAuth
 } from "./api";
 
 const ROUTE_MAP: Record<string, () => Promise<unknown>> = {
@@ -13,13 +14,8 @@ const ROUTE_MAP: Record<string, () => Promise<unknown>> = {
 };
 
 export async function apiRequest(method: string, url: string, data?: unknown) {
-    const token = localStorage.getItem("access_token");
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    const res = await fetch(url, {
+    const res = await fetchAPI(url, {
         method,
-        headers,
         body: data ? JSON.stringify(data) : undefined,
     });
 
@@ -34,13 +30,12 @@ const defaultQueryFn = async ({ queryKey }: { queryKey: readonly unknown[] }) =>
     const key = queryKey[0] as string;
     if (ROUTE_MAP[key]) return ROUTE_MAP[key]();
 
-    const token = localStorage.getItem("access_token");
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    const res = await fetch(key, { headers });
+    const res = await fetchAPI(key);
+    
+    // fetchAPI actually handles 401 redirect internally inside api.ts, 
+    // rendering explicit 401 handling here mostly redundant, but good as a final safety net.
     if (res.status === 401) {
-        localStorage.removeItem("access_token");
+        clearAuth();
         window.location.href = "/login";
         return null;
     }

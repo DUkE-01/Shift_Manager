@@ -6,9 +6,7 @@ public static class SwaggerConfig
 {
     public static void Configure(Swashbuckle.AspNetCore.SwaggerGen.SwaggerGenOptions c)
     {
-        c.SwaggerDoc("v1", new OpenApiInfo { Title = "Shift Manager API", Version = "v1" });
 
-        
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Name = "Authorization",

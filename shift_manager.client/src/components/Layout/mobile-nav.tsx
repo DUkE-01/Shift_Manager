@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import logoAyuntamiento from "../../assets/Logo_Ayuntamiento.png";
 import logoRD from "../../assets/Logo_Republica_Dominicana.png";
+import { getCurrentUser } from "@/lib/api";
 
 const navigationItems = [
     { name: "Panel de Control", href: "/", icon: "tachometer-alt", testId: "mobile-nav-dashboard" },
@@ -55,7 +56,14 @@ export function MobileNav() {
                             </div>
                         </div>
                         <div className="flex-1 px-4 py-6 space-y-2">
-                            {navigationItems.map((item) => {
+                            {(() => {
+                                const user = getCurrentUser();
+                                const isOficial = user.rol === "Oficial" || user.rol === "Agente";
+                                return navigationItems.filter(item => {
+                                    if (isOficial) return item.href === "/schedule" || item.href === "/reports";
+                                    return true;
+                                });
+                            })().map((item) => {
                                 const isActive = location === item.href;
                                 return (
                                     <Link key={item.href} href={item.href}

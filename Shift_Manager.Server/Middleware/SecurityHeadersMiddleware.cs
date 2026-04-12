@@ -12,16 +12,16 @@ public class SecurityHeadersMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         // Prevent clickjacking
-        context.Response.Headers.Add("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
 
         // Prevent MIME sniffing
-        context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
 
         // Enable XSS protection
-        context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+        context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
 
         // Content Security Policy
-        context.Response.Headers.Add("Content-Security-Policy",
+        context.Response.Headers.Append("Content-Security-Policy",
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
             "style-src 'self' 'unsafe-inline'; " +
@@ -33,14 +33,14 @@ public class SecurityHeadersMiddleware
             "form-action 'self'");
 
         // Strict Transport Security
-        context.Response.Headers.Add("Strict-Transport-Security",
+        context.Response.Headers.Append("Strict-Transport-Security",
             "max-age=31536000; includeSubDomains; preload");
 
         // Referrer Policy
-        context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
 
         // Permissions Policy
-        context.Response.Headers.Add("Permissions-Policy",
+        context.Response.Headers.Append("Permissions-Policy",
             "geolocation=(), microphone=(), camera=(), payment=()");
 
         await _next(context);
