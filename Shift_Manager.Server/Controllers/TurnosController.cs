@@ -27,10 +27,6 @@ public class TurnosController : ControllerBase
         _db           = db;
     }
 
-    // ─── GET todos ────────────────────────────────────────────────────────────
-    // Admin: todos los turnos paginados
-    // Supervisor: todos (ve su cuadrante completo)
-    // Agente/Oficial: solo sus propios turnos
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<TurnoDto>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
@@ -83,8 +79,6 @@ public class TurnosController : ControllerBase
     public async Task<IActionResult> GetByCuadrante(int cuadranteId)
         => Ok(await _turnoService.GetByCuadranteAsync(cuadranteId));
 
-    // ─── POST ─────────────────────────────────────────────────────────────────
-    // Admin y Supervisor pueden crear turnos
 
     [HttpPost]
     [Authorize(Roles = "Administrador,Supervisor")]
@@ -114,9 +108,6 @@ public class TurnosController : ControllerBase
         return await ResultFromService(async () => await _turnoService.CreateBatchAsync(dtos));
     }
 
-    // ─── PUT ──────────────────────────────────────────────────────────────────
-    // Admin y Supervisor pueden editar turnos
-
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Administrador,Supervisor")]
     public async Task<IActionResult> Update(int id, [FromBody] ActualizarTurnoDto dto)
@@ -140,9 +131,6 @@ public class TurnosController : ControllerBase
         return await ResultFromService(async () => await _turnoService.UpdateAsync(id, dto));
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
-    // Solo Admin puede eliminar turnos
-
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Delete(int id)
@@ -151,7 +139,7 @@ public class TurnosController : ControllerBase
         return NoContent();
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
+    
 
     private async Task<int?> GetAgenteIdAsync()
     {

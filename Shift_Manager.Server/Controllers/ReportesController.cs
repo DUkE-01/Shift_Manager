@@ -30,10 +30,6 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         ["assigned"] = "EnProceso", ["resolved"] = "Cerrado", ["closed"] = "Cerrado"
     };
 
-    // ─── GET ──────────────────────────────────────────────────────────────────
-    // Admin: todos los reportes
-    // Supervisor: reportes de su cuadrante
-    // Agente/Oficial: solo sus propios reportes
 
     [HttpGet]
     [Route("api/reportes")]
@@ -98,8 +94,6 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         return Ok(reporte);
     }
 
-    // ─── POST ─────────────────────────────────────────────────────────────────
-    // Admin y Supervisor pueden crear reportes
 
     [HttpPost]
     [Route("api/reportes")]
@@ -128,8 +122,6 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         return Ok(reporte);
     }
 
-    // ─── PUT / PATCH ──────────────────────────────────────────────────────────
-    // Admin y Supervisor pueden actualizar reportes
 
     [HttpPut]
     [HttpPatch]
@@ -180,8 +172,6 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         return Ok(reporte);
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
-    // Solo Admin puede eliminar reportes
 
     [HttpDelete]
     [Route("api/reportes/{id:int}")]
@@ -196,7 +186,7 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         return NoContent();
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
+    
 
     private async Task<int?> GetAgenteIdAsync()
     {

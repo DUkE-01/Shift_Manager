@@ -15,9 +15,6 @@ namespace Shift_Manager.Server.Controllers;
 [Authorize]
 public class AgentesController(IAgentService agentService, ShiftManagerDbContext db) : ControllerBase
 {
-    // ─── GET todos ────────────────────────────────────────────────────────────
-    // Admin y Supervisor: ven todos los agentes
-    // Agente/Oficial: solo se ve a sí mismo
 
     [HttpGet]
     [Route("api/agentes")]
@@ -70,8 +67,6 @@ public class AgentesController(IAgentService agentService, ShiftManagerDbContext
         return agente is null ? NotFound($"Agente {id} no encontrado.") : Ok(agente);
     }
 
-    // ─── POST ─────────────────────────────────────────────────────────────────
-    // Solo Admin puede crear agentes
 
     [HttpPost]
     [Route("api/agentes")]
@@ -88,8 +83,6 @@ public class AgentesController(IAgentService agentService, ShiftManagerDbContext
         catch (BusinessRuleException ex) { return BadRequest(ex.Message); }
     }
 
-    // ─── PUT / PATCH ──────────────────────────────────────────────────────────
-    // Solo Admin puede editar agentes
 
     [HttpPut]
     [HttpPatch]
@@ -120,8 +113,6 @@ public class AgentesController(IAgentService agentService, ShiftManagerDbContext
         catch (NotFoundException ex) { return NotFound(ex.Message); }
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
-    // Solo Admin puede eliminar agentes
 
     [HttpDelete]
     [Route("api/agentes/{id:int}")]
@@ -136,7 +127,7 @@ public class AgentesController(IAgentService agentService, ShiftManagerDbContext
         catch (NotFoundException ex) { return NotFound(ex.Message); }
     }
 
-    // ─── Helper ───────────────────────────────────────────────────────────────
+    
 
     private async Task<int?> GetAgenteIdDelUsuarioAsync()
     {

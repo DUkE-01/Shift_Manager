@@ -124,7 +124,6 @@ export default function Reports() {
         <div className="h-full overflow-auto">
             <div className="p-6 space-y-6">
 
-                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">Reportes de Emergencia</h2>
@@ -139,7 +138,6 @@ export default function Reports() {
                     )}
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                         { label: "Total Reportes", value: stats.total, bg: "bg-blue-100", icon: <i className="fas fa-file-alt text-blue-600 text-xl" />, testId: "stats-total" },
@@ -159,7 +157,6 @@ export default function Reports() {
                     ))}
                 </div>
 
-                {/* Filtros */}
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -189,7 +186,6 @@ export default function Reports() {
                     </Select>
                 </div>
 
-                {/* Lista */}
                 <div className="space-y-4" data-testid="reports-list">
                     {filteredReports?.map(report => (
                         <Card key={report.id} className="hover:shadow-md transition-shadow" data-testid={`report-${report.id}`}>
@@ -197,7 +193,6 @@ export default function Reports() {
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
 
-                                        {/* Badges row */}
                                         <div className="flex flex-wrap items-center gap-2 mb-3">
                                             <div className="flex items-center gap-2">
                                                 <i className={`fas fa-${getTypeIcon(report.type)} text-gray-500`} />
@@ -244,7 +239,6 @@ export default function Reports() {
                                             )}
                                         </div>
 
-                                        {/* Cuerpo */}
                                         {editingReportId === report.id ? (
                                             <div className="space-y-3 mb-3">
                                                 <Input value={editFormData?.description ?? ""} onChange={e => handleInputChange("description", e.target.value)} placeholder="Descripción" />
@@ -290,7 +284,6 @@ export default function Reports() {
                                         )}
                                     </div>
 
-                                    {/* Botones de acción */}
                                     <div className="flex flex-col gap-2 flex-shrink-0">
                                         {editingReportId === report.id ? (
                                             <>
