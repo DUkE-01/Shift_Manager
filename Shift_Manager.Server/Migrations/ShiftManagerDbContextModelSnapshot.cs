@@ -2,8 +2,8 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Shift_Manager.Server.Infrastructure.Context;
 
 #nullable disable
@@ -18,73 +18,73 @@ namespace Shift_Manager.Server.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.25")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Shift_Manager.Server.Domain.Entities.Agente", b =>
                 {
                     b.Property<int>("ID_Agente")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID_Agente"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID_Agente"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<int?>("Antiguedad")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Apellido")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Cedula")
                         .IsRequired()
                         .HasMaxLength(13)
-                        .HasColumnType("nvarchar(13)");
+                        .HasColumnType("character varying(13)");
 
                     b.Property<string>("Codigo_Agente")
                         .IsRequired()
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
+                        .HasColumnType("character varying(15)");
 
                     b.Property<string>("Contacto")
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
+                        .HasColumnType("character varying(15)");
 
                     b.Property<bool>("Disponibilidad")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("ID_Cuadrante")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<int>("PuestoAsignado")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Rango")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("xmin")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("ID_Agente");
 
@@ -100,32 +100,30 @@ namespace Shift_Manager.Server.Migrations
                         {
                             t.HasTrigger("trg_Agentes_Auditoria");
                         });
-
-                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Shift_Manager.Server.Domain.Entities.Cuadrante", b =>
                 {
                     b.Property<int>("ID_Cuadrante")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID_Cuadrante"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID_Cuadrante"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Sector")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("ID_Cuadrante");
 
@@ -136,33 +134,33 @@ namespace Shift_Manager.Server.Migrations
                 {
                     b.Property<int>("ID_Historico")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID_Historico"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID_Historico"));
 
                     b.Property<string>("Accion")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Detalle")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("ID_Registro")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Tabla")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Usuario")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("ID_Historico");
 
@@ -173,59 +171,59 @@ namespace Shift_Manager.Server.Migrations
                 {
                     b.Property<int>("IdHorario")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdHorario"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdHorario"));
 
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateOnly>("Fecha")
                         .HasColumnType("date");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FechaModificacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<TimeOnly>("HoraFin")
-                        .HasColumnType("time");
+                        .HasColumnType("time without time zone");
 
                     b.Property<TimeOnly>("HoraInicio")
-                        .HasColumnType("time");
+                        .HasColumnType("time without time zone");
 
                     b.Property<int>("ID_Turno")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("IdAgente")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("IdAgente");
 
                     b.Property<int>("IdCuadrante")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Observaciones")
                         .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                        .HasColumnType("character varying(300)");
 
                     b.Property<string>("TipoTurno")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("UsuarioCreacion")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("UsuarioModificacion")
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("IdHorario");
 
@@ -237,39 +235,37 @@ namespace Shift_Manager.Server.Migrations
                         {
                             t.HasTrigger("trg_Horarios_Auditoria");
                         });
-
-                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Shift_Manager.Server.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("Created")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<DateTime>("Expiration")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ReplacedByToken")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("Revoked")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("UsuarioId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -282,50 +278,50 @@ namespace Shift_Manager.Server.Migrations
                 {
                     b.Property<int>("ID_Reporte")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID_Reporte"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID_Reporte"));
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime?>("FechaCierre")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("ID_Agente")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ID_Cuadrante")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ID_Turno")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Prioridad")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("ID_Reporte");
 
@@ -339,53 +335,51 @@ namespace Shift_Manager.Server.Migrations
                         {
                             t.HasTrigger("trg_Reportes_Auditoria");
                         });
-
-                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Shift_Manager.Server.Domain.Entities.Turno", b =>
                 {
                     b.Property<int>("ID_Turno")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID_Turno"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID_Turno"));
 
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FechaFinReal")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("FechaInicioReal")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("FechaProgramadaFin")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("FechaProgramadaInicio")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("ID_Agente")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ID_Cuadrante")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Observaciones")
                         .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                        .HasColumnType("character varying(300)");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<uint>("xmin")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("ID_Turno");
 
@@ -397,47 +391,45 @@ namespace Shift_Manager.Server.Migrations
                         {
                             t.HasTrigger("trg_Turnos_Auditoria");
                         });
-
-                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("Shift_Manager.Server.Domain.Entities.UsuarioSistema", b =>
                 {
                     b.Property<int>("ID_Usuario")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID_Usuario"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ID_Usuario"));
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("ID_Agente")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Rol")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("ID_Usuario");
 

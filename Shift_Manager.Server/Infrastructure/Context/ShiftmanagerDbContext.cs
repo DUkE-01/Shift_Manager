@@ -32,7 +32,8 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.Property(x => x.Cedula).HasMaxLength(13).IsRequired();
                 e.Property(x => x.Rango).HasMaxLength(20).IsRequired();
                 e.Property(x => x.Contacto).HasMaxLength(15);
-                e.Property(x => x.RowVersion).IsRowVersion();
+                e.UseXminAsConcurrencyToken();
+                e.Ignore(x => x.RowVersion);
                 e.HasOne(x => x.Cuadrante)
                     .WithMany(c => c.Agentes)
                     .HasForeignKey(x => x.ID_Cuadrante);
@@ -55,7 +56,8 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.HasKey(x => x.ID_Turno);
                 e.Property(x => x.Estado).HasMaxLength(20).IsRequired();
                 e.Property(x => x.Observaciones).HasMaxLength(300);
-                e.Property(x => x.RowVersion).IsRowVersion();
+                e.UseXminAsConcurrencyToken();
+                e.Ignore(x => x.RowVersion);
                 e.HasOne(x => x.Agente)
                     .WithMany(a => a.Turnos)
                     .HasForeignKey(x => x.ID_Agente)
@@ -106,7 +108,8 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.Property(x => x.Descripcion).HasMaxLength(500).IsRequired();
                 e.Property(x => x.Estado).HasMaxLength(20).IsRequired();
                 e.Property(x => x.Prioridad).HasMaxLength(20).IsRequired();
-                e.Property(x => x.RowVersion).IsRowVersion();
+                e.UseXminAsConcurrencyToken();
+                e.Ignore(x => x.RowVersion);
                 e.HasOne(x => x.Agente)
                     .WithMany(a => a.Reportes)
                     .HasForeignKey(x => x.ID_Agente)
@@ -133,7 +136,8 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.Property(x => x.Username).HasMaxLength(30).IsRequired();
                 e.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
                 e.Property(x => x.Rol).HasMaxLength(20).IsRequired();
-                e.Property(x => x.RowVersion).IsRowVersion();
+                e.UseXminAsConcurrencyToken();
+                e.Ignore(x => x.RowVersion);
                 e.HasOne(x => x.Agente)
                     .WithMany(a => a.UsuariosSistema)
                     .HasForeignKey(x => x.ID_Agente)
@@ -155,7 +159,7 @@ namespace Shift_Manager.Server.Infrastructure.Context
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Token).HasMaxLength(500).IsRequired();
                 e.Property(x => x.Expiration).IsRequired();
-                e.Property(x => x.Created).IsRequired().HasDefaultValueSql("GETDATE()");
+                e.Property(x => x.Created).IsRequired().HasDefaultValueSql("now()");
                 
                 // Foreign key a Usuario
                 e.HasOne(x => x.Usuario)

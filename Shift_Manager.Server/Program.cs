@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Serilog;
 using Serilog.Formatting.Json;
@@ -22,7 +22,7 @@ try
 {
     Log.Information("✅ Iniciando Shift Manager API");
 
-    var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateBuilder(args).LoadDotEnvIfDevelopment();
     builder.Host.UseSerilog();
 
     // Opciones de configuración

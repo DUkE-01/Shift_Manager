@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Shift_Manager.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class FixCascadePaths : Migration
+    public partial class FinalFixPostgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,12 +16,12 @@ namespace Shift_Manager.Server.Migrations
                 name: "Cuadrantes",
                 columns: table => new
                 {
-                    ID_Cuadrante = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nombre = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Sector = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Activo = table.Column<bool>(type: "bit", nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    ID_Cuadrante = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Nombre = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Sector = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Activo = table.Column<bool>(type: "boolean", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,14 +32,14 @@ namespace Shift_Manager.Server.Migrations
                 name: "HistoricoCambios",
                 columns: table => new
                 {
-                    ID_Historico = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Tabla = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    ID_Registro = table.Column<int>(type: "int", nullable: false),
-                    Accion = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Usuario = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Fecha = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Detalle = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    ID_Historico = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Tabla = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    ID_Registro = table.Column<int>(type: "integer", nullable: false),
+                    Accion = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Usuario = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    Fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Detalle = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -49,22 +50,22 @@ namespace Shift_Manager.Server.Migrations
                 name: "Agentes",
                 columns: table => new
                 {
-                    ID_Agente = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Codigo_Agente = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
-                    Nombre = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Apellido = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Cedula = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
-                    Rango = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Contacto = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: true),
-                    PuestoAsignado = table.Column<int>(type: "int", nullable: false),
-                    ID_Cuadrante = table.Column<int>(type: "int", nullable: false),
-                    Antiguedad = table.Column<int>(type: "int", nullable: true),
-                    Disponibilidad = table.Column<bool>(type: "bit", nullable: false),
-                    Activo = table.Column<bool>(type: "bit", nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaModificacion = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                    ID_Agente = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Codigo_Agente = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: false),
+                    Nombre = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Apellido = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Cedula = table.Column<string>(type: "character varying(13)", maxLength: 13, nullable: false),
+                    Rango = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Contacto = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: true),
+                    PuestoAsignado = table.Column<int>(type: "integer", nullable: false),
+                    ID_Cuadrante = table.Column<int>(type: "integer", nullable: false),
+                    Antiguedad = table.Column<int>(type: "integer", nullable: true),
+                    Disponibilidad = table.Column<bool>(type: "boolean", nullable: false),
+                    Activo = table.Column<bool>(type: "boolean", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FechaModificacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -81,18 +82,18 @@ namespace Shift_Manager.Server.Migrations
                 name: "Turnos",
                 columns: table => new
                 {
-                    ID_Turno = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ID_Agente = table.Column<int>(type: "int", nullable: false),
-                    ID_Cuadrante = table.Column<int>(type: "int", nullable: false),
-                    FechaProgramadaInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaProgramadaFin = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaInicioReal = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    FechaFinReal = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Estado = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Observaciones = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                    ID_Turno = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ID_Agente = table.Column<int>(type: "integer", nullable: false),
+                    ID_Cuadrante = table.Column<int>(type: "integer", nullable: false),
+                    FechaProgramadaInicio = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FechaProgramadaFin = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FechaInicioReal = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    FechaFinReal = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Observaciones = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -115,15 +116,15 @@ namespace Shift_Manager.Server.Migrations
                 name: "UsuariosSistema",
                 columns: table => new
                 {
-                    ID_Usuario = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Username = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
-                    Rol = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    ID_Agente = table.Column<int>(type: "int", nullable: true),
-                    Activo = table.Column<bool>(type: "bit", nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                    ID_Usuario = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Username = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    PasswordHash = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Rol = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    ID_Agente = table.Column<int>(type: "integer", nullable: true),
+                    Activo = table.Column<bool>(type: "boolean", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -140,21 +141,21 @@ namespace Shift_Manager.Server.Migrations
                 name: "Horarios",
                 columns: table => new
                 {
-                    IdHorario = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    IdAgente = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    IdHorario = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    IdAgente = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Fecha = table.Column<DateOnly>(type: "date", nullable: false),
-                    HoraInicio = table.Column<TimeOnly>(type: "time", nullable: false),
-                    HoraFin = table.Column<TimeOnly>(type: "time", nullable: false),
-                    TipoTurno = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    IdCuadrante = table.Column<int>(type: "int", nullable: false),
-                    ID_Turno = table.Column<int>(type: "int", nullable: false),
-                    Estado = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UsuarioCreacion = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    FechaModificacion = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UsuarioModificacion = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
-                    Observaciones = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true)
+                    HoraInicio = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
+                    HoraFin = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
+                    TipoTurno = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    IdCuadrante = table.Column<int>(type: "integer", nullable: false),
+                    ID_Turno = table.Column<int>(type: "integer", nullable: false),
+                    Estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UsuarioCreacion = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    FechaModificacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UsuarioModificacion = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    Observaciones = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -177,18 +178,18 @@ namespace Shift_Manager.Server.Migrations
                 name: "Reportes",
                 columns: table => new
                 {
-                    ID_Reporte = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ID_Turno = table.Column<int>(type: "int", nullable: false),
-                    ID_Agente = table.Column<int>(type: "int", nullable: false),
-                    ID_Cuadrante = table.Column<int>(type: "int", nullable: false),
-                    Tipo = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Descripcion = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Estado = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Prioridad = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaCierre = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                    ID_Reporte = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ID_Turno = table.Column<int>(type: "integer", nullable: false),
+                    ID_Agente = table.Column<int>(type: "integer", nullable: false),
+                    ID_Cuadrante = table.Column<int>(type: "integer", nullable: false),
+                    Tipo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Descripcion = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Prioridad = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FechaCierre = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -217,14 +218,14 @@ namespace Shift_Manager.Server.Migrations
                 name: "RefreshTokens",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UsuarioId = table.Column<int>(type: "int", nullable: false),
-                    Token = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Expiration = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Created = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    Revoked = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReplacedByToken = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UsuarioId = table.Column<int>(type: "integer", nullable: false),
+                    Token = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Expiration = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Created = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    Revoked = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ReplacedByToken = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

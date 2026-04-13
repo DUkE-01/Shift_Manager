@@ -41,12 +41,12 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services, IConfiguration config)
     {
         services.AddDbContext<ShiftManagerDbContext>(options =>
-            options.UseSqlServer(
+            options.UseNpgsql(
                 config.GetConnectionString("DefaultConnection"),
-                sql => sql.EnableRetryOnFailure(
+                npgsql => npgsql.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null)));
+                    errorCodesToAdd: null)));
 
         return services;
     }
