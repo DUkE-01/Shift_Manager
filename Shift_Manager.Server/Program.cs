@@ -76,10 +76,17 @@ try
 {
     if (context.Request.Method == "OPTIONS")
     {
+        context.Response.Headers.Append("Access-Control-Allow-Origin", 
+            context.Request.Headers["Origin"].FirstOrDefault() ?? "*");
+        context.Response.Headers.Append("Access-Control-Allow-Methods", 
+            "GET, POST, PUT, DELETE, OPTIONS");
+        context.Response.Headers.Append("Access-Control-Allow-Headers", 
+            "Content-Type, Authorization, X-Requested-With");
+        context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
         context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
         return;
     }
-
     await next();
 });
 
