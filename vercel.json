@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd shift_manager.client && npm install && npm run build",
+  "outputDirectory": "shift_manager.client/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
