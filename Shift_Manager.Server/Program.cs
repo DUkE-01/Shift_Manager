@@ -71,10 +71,7 @@ try
     app.UseHttpsRedirection();
 
     // CORS debe ir ANTES de Auth
-    app.UseCors(ShiftManagerCors.PolicyName, policy =>{
-         Console.WriteLine("Origin: " + origin);
-                return true; // temporal para debug
-    }); 
+    app.UseCors(ShiftManagerCors.PolicyName);
     app.Use(async (context, next) =>
 {
     if (context.Request.Method == "OPTIONS")
