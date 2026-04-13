@@ -168,7 +168,7 @@ public static class ServiceCollectionExtensions
             {
                 if (env.IsDevelopment())
                 {
-                    policy.SetIsOriginAllowed(_ => true)
+                    policy.WithOrigins(origins)
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
