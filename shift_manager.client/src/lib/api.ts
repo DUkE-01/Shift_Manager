@@ -2,7 +2,7 @@
 import { mapReporte } from "./mapReporte";
 import { determineShiftColumn, ShiftColumn } from "./shiftUtils";
 
-const BASE_URL = "";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export function getToken(): string | null {
     return localStorage.getItem("access_token");
