@@ -143,21 +143,39 @@ public static class ServiceCollectionExtensions
         IConfiguration config,
         IWebHostEnvironment env)
     {
-        var origins = config.GetSection($"{CorsOptions.Section}:AllowedOrigins").Get<string[]>()
-                      ?? new[] { "http://localhost:5173", "https://localhost:5173" };
+        // Intenta leer de la sección Cors:AllowedOrigins o de una variable de entorno CORS_ALLOWED_ORIGINS
+        var origins = config.GetSection($"{CorsOptions.Section}:AllowedOrigins").Get<string[]>();
+        
+        // Si no hay en config, intentamos leer una sola string separada por comas (típico en env vars)
+        if (origins == null || origins.Length == 0)
+        {
+            var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+            if (!string.IsNullOrEmpty(envOrigins))
+            {
+                origins = envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            }
+        }
+
+        // Si sigue vacío, usamos defaults de desarrollo
+        origins ??= new[] { "http://localhost:5173", "https://localhost:5173" };
 
         services.AddCors(o =>
         {
             o.AddPolicy(CorsOptions.PolicyName, policy =>
             {
                 if (env.IsDevelopment())
-                    policy.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                {
+                    policy.SetIsOriginAllowed(_ => true)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                }
                 else
                 {
-                    if (origins.Length > 0)
-                        policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-                    else
-                        throw new InvalidOperationException("AllowedOrigins must be configured in production.");
+                    policy.WithOrigins(origins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
                 }
             });
         });
