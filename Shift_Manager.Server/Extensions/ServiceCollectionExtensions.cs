@@ -152,7 +152,10 @@ public static class ServiceCollectionExtensions
             var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
             if (!string.IsNullOrEmpty(envOrigins))
             {
-                origins = envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                origins = envOrigins
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(o => o.Trim().TrimEnd('/')) // 👈 AQUÍ el fix
+        .ToArray();
             }
         }
 
@@ -172,10 +175,14 @@ public static class ServiceCollectionExtensions
                 }
                 else
                 {
-                    policy.WithOrigins(origins)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.SetIsOriginAllowed(origin =>
+                    {
+                        var cleanOrigin = origin.Trim().TrimEnd('/');
+                        return origins.Any(o => o == cleanOrigin);
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+.AllowCredentials();
                 }
             });
         });
