@@ -35,7 +35,7 @@ export async function fetchAPI(path: string, options: RequestInit = {}): Promise
     if (res.status === 401) {
         const refreshToken = localStorage.getItem("refresh_token");
         if (refreshToken) {
-            const refreshRes = await fetch(`${BASE_URL}/api/auth/refresh`, {
+            const refreshRes = await fetch(`${BASE_URL.replace(/\/api$/, '')}/api/auth/refresh`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ refreshToken }),
@@ -333,7 +333,7 @@ function mapHorario(h: any, codeToId?: Map<string, string>): Shift {
 }
 
 export async function login(username: string, password: string) {
-    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+    const res = await fetch(`${BASE_URL.replace(/\/api$/, '')}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
