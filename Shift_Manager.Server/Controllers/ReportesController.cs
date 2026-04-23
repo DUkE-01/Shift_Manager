@@ -158,6 +158,8 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
 
         var rol = User.FindFirst(ClaimTypes.Role)?.Value;
 
+        var prevEstado = reporte.Estado;
+
         // Validación por Rol
         if (rol == "Supervisor")
         {
@@ -175,7 +177,11 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
             
             if (!string.IsNullOrEmpty(dto.Estado)) reporte.Estado = dto.Estado;
 
+            bool isResolving = prevEstado != "Cerrado" && reporte.Estado == "Cerrado";
             await db.SaveChangesAsync();
+
+            if (isResolving) await NotifyResolutionAsync(reporte);
+
             return Ok(reporte);
         }
 
@@ -191,7 +197,11 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
             reporte.Prioridad = mappedPrio;
         if (!string.IsNullOrEmpty(dto.Prioridad))     reporte.Prioridad = dto.Prioridad;
 
+        bool isResolvingGlobal = prevEstado != "Cerrado" && reporte.Estado == "Cerrado";
         await db.SaveChangesAsync();
+
+        if (isResolvingGlobal && rol != "Administrador") await NotifyResolutionAsync(reporte);
+
         return Ok(reporte);
     }
 
@@ -247,6 +257,30 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         {
             var n = notifs.FirstOrDefault(x => x.ReferenciaId == r.ID_Reporte);
             r.VistoPorAgente = n?.Leida;
+        }
+    }
+
+    private async Task NotifyResolutionAsync(Reporte reporte)
+    {
+        var targets = await db.UsuariosSistema
+            .Include(u => u.Agente)
+            .Where(u => u.Activo && u.ID_Agente != null && (u.Rol == "Administrador" || (u.Rol == "Supervisor" && u.Agente!.ID_Cuadrante == reporte.ID_Cuadrante)))
+            .Select(u => u.ID_Agente!.Value)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var tId in targets)
+        {
+            db.Notificaciones.Add(new Notificacion {
+                IdAgente = tId,
+                Titulo = "⚠️ Reporte Resuelto",
+                Mensaje = $"Oficial resolvió la incidencia: {reporte.Tipo}. ID: {reporte.ID_Reporte:D4}",
+                TipoReferencia = "Reporte",
+                ReferenciaId = reporte.ID_Reporte
+            });
+        }
+        if (targets.Any()) {
+            await db.SaveChangesAsync();
         }
     }
 
