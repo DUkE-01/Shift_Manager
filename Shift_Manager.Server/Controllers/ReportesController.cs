@@ -43,6 +43,7 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
             var todos = await db.Reportes
                 .Include(r => r.Agente).Include(r => r.Cuadrante).Include(r => r.Turno)
                 .AsNoTracking().ToListAsync();
+            await AttachNotificacionFlags(todos);
             return Ok(todos);
         }
 
@@ -54,6 +55,7 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
                 .AsNoTracking()
                 .Where(r => r.ID_Cuadrante == cuadranteId)
                 .ToListAsync();
+            await AttachNotificacionFlags(reportesCuadrante);
             return Ok(reportesCuadrante);
         }
 
@@ -231,6 +233,21 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         var turno = await db.Turnos.Where(t => t.Estado == "Activo").FirstOrDefaultAsync()
                     ?? await db.Turnos.FirstOrDefaultAsync();
         return turno?.ID_Turno ?? 1;
+    }
+
+    private async Task AttachNotificacionFlags(List<Reporte> reportes)
+    {
+        if (!reportes.Any()) return;
+        var rIds = reportes.Select(r => r.ID_Reporte).ToList();
+        var notifs = await db.Notificaciones.AsNoTracking()
+            .Where(n => n.TipoReferencia == "Reporte" && n.ReferenciaId != null && rIds.Contains(n.ReferenciaId.Value))
+            .ToListAsync();
+
+        foreach (var r in reportes)
+        {
+            var n = notifs.FirstOrDefault(x => x.ReferenciaId == r.ID_Reporte);
+            r.VistoPorAgente = n?.Leida;
+        }
     }
 
     private static int ResolveId(int primary, string? fallbackString)
