@@ -22,6 +22,9 @@ namespace Shift_Manager.Server.Domain.Entities
         public DateTime? FechaCierre { get; set; }
         public byte[] RowVersion { get; set; } = null!;
 
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public bool? VistoPorAgente { get; set; }
+
         public Turno Turno { get; set; } = null!;
         public Agente Agente { get; set; } = null!;
         public Cuadrante Cuadrante { get; set; } = null!;
