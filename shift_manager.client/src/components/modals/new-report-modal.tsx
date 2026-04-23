@@ -20,8 +20,10 @@ const reportFormSchema = insertEmergencyReportSchema.extend({
     priority: z.enum(["high", "medium", "low"]),
     description: z.string().min(1, "La descripción es requerida"),
     location: z.string().min(1, "La ubicación es requerida"),
-    callerName: z.string().optional(),
-    callerPhone: z.string().optional(),
+    callerName: z.string().min(1, "El nombre del denunciante es requerido"),
+    callerPhone: z.string().min(1, "El número es requerido"),
+    assignedOfficerId: z.string().min(1, "Debe seleccionar un oficial"),
+    beatId: z.string().min(1, "Debe seleccionar un cuadrante"),
 });
 type ReportFormData = z.infer<typeof reportFormSchema>;
 
@@ -70,6 +72,8 @@ export function NewReportModal({ isOpen, onClose }: NewReportModalProps) {
         { value: "low", label: "Baja", color: "text-green-600" },
     ];
 
+    const selectedBeatId = form.watch("beatId");
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="modal-new-report">
@@ -109,34 +113,41 @@ export function NewReportModal({ isOpen, onClose }: NewReportModalProps) {
                         )} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormField control={form.control} name="callerName" render={({ field }) => (
-                                <FormItem><FormLabel>Nombre del Denunciante (Opcional)</FormLabel>
+                                <FormItem><FormLabel>Nombre del Denunciante</FormLabel>
                                     <FormControl><Input {...field} value={field.value || ""} placeholder="Nombre completo" data-testid="input-caller-name" /></FormControl>
                                     <FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="callerPhone" render={({ field }) => (
-                                <FormItem><FormLabel>Teléfono del Denunciante (Opcional)</FormLabel>
+                                <FormItem><FormLabel>Teléfono del Denunciante</FormLabel>
                                     <FormControl><Input {...field} value={field.value || ""} placeholder="8091234567" data-testid="input-caller-phone" /></FormControl>
                                     <FormMessage /></FormItem>
                             )} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormField control={form.control} name="assignedOfficerId" render={({ field }) => (
-                                <FormItem><FormLabel>Oficial Asignado (Opcional)</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                                        <FormControl><SelectTrigger data-testid="select-officer"><SelectValue placeholder="Seleccionar Oficial" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {officers?.filter(o => o.status === "on_duty").map(o => (
-                                                <SelectItem key={o.id} value={o.id}>{o.name} — {o.badge}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select><FormMessage /></FormItem>
-                            )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormField control={form.control} name="beatId" render={({ field }) => (
-                                <FormItem><FormLabel>Cuadrante Asignado (Opcional)</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormItem><FormLabel>Cuadrante Asignado</FormLabel>
+                                    <Select onValueChange={(val) => {
+                                            field.onChange(val);
+                                            form.setValue("assignedOfficerId", ""); // Resetear oficial si cambia cuadrante
+                                        }} value={field.value || ""}>
                                         <FormControl><SelectTrigger data-testid="select-beat"><SelectValue placeholder="Seleccionar Cuadrante" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {beats?.map(b => <SelectItem key={b.id} value={b.id}>{b.name} — Circunscripción {b.circunscripcion}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="assignedOfficerId" render={({ field }) => (
+                                <FormItem><FormLabel>Oficial Asignado</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={!selectedBeatId}>
+                                        <FormControl><SelectTrigger data-testid="select-officer"><SelectValue placeholder={!selectedBeatId ? "Primero elija un cuadrante" : "Seleccionar Oficial"} /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {officers?.filter(o => o.status === "on_duty" && o.cuadrantes?.includes(selectedBeatId)).map(o => (
+                                                <SelectItem key={o.id} value={o.id}>{o.name} — {o.badge}</SelectItem>
+                                            ))}
+                                            {officers?.filter(o => o.status === "on_duty" && o.cuadrantes?.includes(selectedBeatId)).length === 0 && (
+                                                <SelectItem value="none" disabled>No hay oficiales en este cuadrante</SelectItem>
+                                            )}
                                         </SelectContent>
                                     </Select><FormMessage /></FormItem>
                             )} />
