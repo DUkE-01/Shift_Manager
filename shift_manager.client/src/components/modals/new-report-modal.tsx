@@ -124,7 +124,6 @@ export function NewReportModal({ isOpen, onClose }: NewReportModalProps) {
                             )} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormField control={form.control} name="beatId" render={({ field }) => (
                                 <FormItem><FormLabel>Cuadrante Asignado</FormLabel>
                                     <Select onValueChange={(val) => {
