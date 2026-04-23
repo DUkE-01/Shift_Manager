@@ -169,6 +169,22 @@ namespace Shift_Manager.Server.Infrastructure.Context
                     .IsRequired();
             });
 
+            // ── NOTIFICACIONES ──────────────────────────────────────────────
+            modelBuilder.Entity<Notificacion>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Titulo).HasMaxLength(100).IsRequired();
+                e.Property(x => x.Mensaje).HasMaxLength(500).IsRequired();
+                e.Property(x => x.TipoReferencia).HasMaxLength(50).IsRequired();
+                e.Property(x => x.FechaCreacion).IsRequired().HasDefaultValueSql("now()");
+                
+                e.HasOne(x => x.Agente)
+                    .WithMany() // Ajustado para no requerir colección bidireccional inmediata
+                    .HasForeignKey(x => x.IdAgente)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+            });
+
             base.OnModelCreating(modelBuilder);
         }
     }
