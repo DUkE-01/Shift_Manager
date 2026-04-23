@@ -193,14 +193,26 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         if (!string.IsNullOrEmpty(dto.Tipo))          reporte.Tipo = dto.Tipo;
         if (!string.IsNullOrEmpty(dto.Descripcion ?? dto.Description))
             reporte.Descripcion = dto.Descripcion ?? dto.Description!;
-        if (!string.IsNullOrEmpty(dto.Priority) && PrioridadMap.TryGetValue(dto.Priority, out var mappedPrio))
-            reporte.Prioridad = mappedPrio;
         if (!string.IsNullOrEmpty(dto.Prioridad))     reporte.Prioridad = dto.Prioridad;
 
+        int prevAgente = reporte.ID_Agente;
+        int nuevoAgenteId = ResolveIdSafe(dto.ID_Agente, dto.AssignedOfficerId, prevAgente);
+        if (nuevoAgenteId > 0 && nuevoAgenteId != prevAgente) 
+            reporte.ID_Agente = nuevoAgenteId;
+            
+        int nuevoCuadrante = ResolveIdSafe(dto.ID_Cuadrante, dto.BeatId, reporte.ID_Cuadrante);
+        if (nuevoCuadrante > 0 && nuevoCuadrante != reporte.ID_Cuadrante)
+            reporte.ID_Cuadrante = nuevoCuadrante;
+
         bool isResolvingGlobal = prevEstado != "Cerrado" && reporte.Estado == "Cerrado";
+        bool isReopening = prevEstado == "Cerrado" && reporte.Estado != "Cerrado";
+        bool isReassigning = prevAgente != reporte.ID_Agente && reporte.ID_Agente > 0;
+        
         await db.SaveChangesAsync();
 
         if (isResolvingGlobal && rol != "Administrador") await NotifyResolutionAsync(reporte);
+        if (isReopening && rol != "Oficial" && rol != "Agente") await NotifyReopenedToAgentAsync(reporte);
+        if (isReassigning) await NotifyNewAssignmentAsync(reporte);
 
         return Ok(reporte);
     }
@@ -284,10 +296,42 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
         }
     }
 
+    private async Task NotifyReopenedToAgentAsync(Reporte reporte)
+    {
+        if (reporte.ID_Agente <= 0) return;
+        db.Notificaciones.Add(new Notificacion {
+            IdAgente = reporte.ID_Agente,
+            Titulo = "🔄 Reporte Reabierto",
+            Mensaje = $"El reporte ID: {reporte.ID_Reporte:D4} ha sido reabierto por revisión.",
+            TipoReferencia = "Reporte",
+            ReferenciaId = reporte.ID_Reporte
+        });
+        await db.SaveChangesAsync();
+    }
+
+    private async Task NotifyNewAssignmentAsync(Reporte reporte)
+    {
+        if (reporte.ID_Agente <= 0) return;
+        db.Notificaciones.Add(new Notificacion {
+            IdAgente = reporte.ID_Agente,
+            Titulo = "📌 Nuevo Reporte Asignado",
+            Mensaje = $"Se te ha re-asignado la incidencia: {reporte.Tipo}. ID: {reporte.ID_Reporte:D4}",
+            TipoReferencia = "Reporte",
+            ReferenciaId = reporte.ID_Reporte
+        });
+        await db.SaveChangesAsync();
+    }
+
     private static int ResolveId(int primary, string? fallbackString)
     {
         if (primary > 0) return primary;
         return int.TryParse(fallbackString, out var parsed) ? parsed : 1;
+    }
+
+    private static int ResolveIdSafe(int primary, string? fallbackString, int fallbackValue)
+    {
+        if (primary > 0) return primary;
+        return int.TryParse(fallbackString, out var parsed) ? parsed : fallbackValue;
     }
 
     private static string MapValue(Dictionary<string, string> map, string? key, string defaultValue)
