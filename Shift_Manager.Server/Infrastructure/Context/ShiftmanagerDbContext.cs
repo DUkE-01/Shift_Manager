@@ -19,7 +19,6 @@ namespace Shift_Manager.Server.Infrastructure.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Notificacion> Notificaciones { get; set; }
 
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // ── AGENTES ──────────────────────────────────────────────────────
