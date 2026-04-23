@@ -17,6 +17,8 @@ namespace Shift_Manager.Server.Infrastructure.Context
         public DbSet<UsuarioSistema> UsuariosSistema { get; set; }
         public DbSet<HistoricoCambio> HistoricoCambios { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Notificacion> Notificaciones { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
