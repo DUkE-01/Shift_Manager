@@ -119,6 +119,19 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
 
         db.Reportes.Add(reporte);
         await db.SaveChangesAsync();
+
+        if (reporte.ID_Agente > 0)
+        {
+            db.Notificaciones.Add(new Notificacion {
+                IdAgente = reporte.ID_Agente,
+                Titulo = "Nuevo Reporte Asignado",
+                Mensaje = "Incidencia: " + reporte.Tipo + " | " + (reporte.Descripcion.Length > 50 ? reporte.Descripcion.Substring(0, 50) + "..." : reporte.Descripcion),
+                TipoReferencia = "Reporte",
+                ReferenciaId = reporte.ID_Reporte
+            });
+            await db.SaveChangesAsync();
+        }
+
         return Ok(reporte);
     }
 
