@@ -200,9 +200,10 @@ export default function Reports() {
                                             </div>
                                             {editingReportId === report.id ? (
                                                 <>
-                                                    <Select value={editFormData?.type ?? ""} onValueChange={v => handleInputChange("type", v)}>
+                                                    <Select value={editFormData?.type || undefined} onValueChange={v => handleInputChange("type", v)}>
                                                         <SelectTrigger className="w-36"><SelectValue placeholder="Tipo" /></SelectTrigger>
                                                         <SelectContent>
+                                                            <SelectItem value="incidente">Incidente</SelectItem>
                                                             <SelectItem value="emergency">Emergencia</SelectItem>
                                                             <SelectItem value="traffic">Tráfico</SelectItem>
                                                             <SelectItem value="domestic">Doméstico</SelectItem>
@@ -211,7 +212,7 @@ export default function Reports() {
                                                             <SelectItem value="non_emergency">No Emergencia</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <Select value={editFormData?.priority ?? ""} onValueChange={v => handleInputChange("priority", v)}>
+                                                    <Select value={editFormData?.priority || undefined} onValueChange={v => handleInputChange("priority", v)}>
                                                         <SelectTrigger className="w-28"><SelectValue placeholder="Prioridad" /></SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="high">Alta</SelectItem>
@@ -219,7 +220,7 @@ export default function Reports() {
                                                             <SelectItem value="low">Baja</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <Select value={editFormData?.status ?? ""} onValueChange={v => handleInputChange("status", v)}>
+                                                    <Select value={editFormData?.status || undefined} onValueChange={v => handleInputChange("status", v)}>
                                                         <SelectTrigger className="w-36"><SelectValue placeholder="Estado" /></SelectTrigger>
                                                         <SelectContent>
                                                             <SelectItem value="pending">Pendiente</SelectItem>
@@ -243,17 +244,17 @@ export default function Reports() {
                                             <div className="space-y-3 mb-3">
                                                 <Input value={editFormData?.description ?? ""} onChange={e => handleInputChange("description", e.target.value)} placeholder="Descripción" />
                                                 <Input value={editFormData?.location ?? ""} onChange={e => handleInputChange("location", e.target.value)} placeholder="Ubicación" />
-                                                <Select value={editFormData?.assignedOfficerId ?? ""} onValueChange={v => handleInputChange("assignedOfficerId", v)}>
+                                                <Select value={editFormData?.assignedOfficerId ?? "none"} onValueChange={v => handleInputChange("assignedOfficerId", v === "none" ? undefined : v)}>
                                                     <SelectTrigger><SelectValue placeholder="Oficial asignado" /></SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="">Sin asignar</SelectItem>
+                                                        <SelectItem value="none">Sin asignar</SelectItem>
                                                         {officers?.map(o => <SelectItem key={o.id} value={o.id}>{o.name} ({o.badge})</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
-                                                <Select value={editFormData?.beatId ?? ""} onValueChange={v => handleInputChange("beatId", v)}>
+                                                <Select value={editFormData?.beatId ?? "none"} onValueChange={v => handleInputChange("beatId", v === "none" ? undefined : v)}>
                                                     <SelectTrigger><SelectValue placeholder="Cuadrante" /></SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="">Sin asignar</SelectItem>
+                                                        <SelectItem value="none">Sin asignar</SelectItem>
                                                         {beats?.map(b => <SelectItem key={b.id} value={b.id}>{b.name} (Circ. {b.circunscripcion})</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
