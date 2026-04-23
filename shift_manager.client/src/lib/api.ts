@@ -581,9 +581,9 @@ export async function getEmergencyReports(): Promise<EmergencyReport[]> {
 export async function createEmergencyReport(report: Partial<EmergencyReport>): Promise<EmergencyReport> {
     const prioridadMap: Record<string, string> = { high: "Alta", medium: "Media", low: "Baja" };
     const payload = {
-        ID_Turno: 1,
-        ID_Agente: Number(report.assignedOfficerId ?? 1),
-        ID_Cuadrante: Number(report.beatId ?? 1),
+        ID_Turno: 0,
+        ID_Agente: Number(report.assignedOfficerId) || 1,
+        ID_Cuadrante: Number(report.beatId) || 1,
         Tipo: report.type ?? "Incidente",
         Descripcion: report.description ?? "",
         Estado: "Pendiente",
