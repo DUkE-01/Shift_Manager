@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { updateOfficer } from "@/lib/api";
 import { invalidateOfficerRelated } from "@/lib/queryClient";
 import { NewOfficerModal } from "@/components/modals/new-officer-modal";
+// NUEVO: modal de horario del oficial
+import { OfficerScheduleModal } from "@/components/modals/officer-schedule-modal";
 import { Officer } from "@/lib/types";
 
 const CUADRANTES_POR_CIRCUNSCRIPCION: Record<string, string[]> = {
@@ -26,6 +28,8 @@ export default function Officers() {
     const [isNewOfficerModalOpen, setIsNewOfficerModalOpen] = useState(false);
     const [editingOfficerId, setEditingOfficerId] = useState<string | null>(null);
     const [editFormData, setEditFormData] = useState<Partial<Officer> | null>(null);
+    // NUEVO: oficial seleccionado para ver su horario
+    const [scheduleOfficer, setScheduleOfficer] = useState<Officer | null>(null);
 
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -177,15 +181,23 @@ export default function Officers() {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    {["Oficial", "Cédula", "Código", "Rango", "Circunscripción", "Puesto", "Cuadrantes", "Estado", "Contacto", "Acciones"].map(h => (
-                                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
-                                    ))}
+                                    {/* Columnas siempre visibles: Oficial, Estado, Acciones */}
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Oficial</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Código</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Rango</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Cédula</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Circunscripción</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Puesto</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">Cuadrantes</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Contacto</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200" data-testid="officers-table">
                                 {filteredOfficers?.map(officer => (
                                     <tr key={officer.id} data-testid={`officer-row-${officer.id}`}>
-                                        {/* Nombre */}
+                                        {/* Oficial — siempre visible */}
                                         <td className="px-4 py-4">
                                             {editingOfficerId === officer.id
                                                 ? <Input value={editFormData?.name || ""} onChange={e => handleInputChange("name", e.target.value)} />
@@ -193,30 +205,32 @@ export default function Officers() {
                                                     <div className="w-8 h-8 rounded-full bg-police-blue-100 flex items-center justify-center mr-3 flex-shrink-0">
                                                         <i className="fas fa-user text-police-blue-600 text-xs" />
                                                     </div>
-                                                    <div><div className="text-sm font-medium text-gray-900">{officer.name}</div>
-                                                        <div className="text-xs text-gray-500">{officer.email}</div></div>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{officer.name}</div>
+                                                        <div className="text-xs text-gray-500">{officer.email}</div>
+                                                    </div>
                                                 </div>}
                                         </td>
-                                        {/* Cédula */}
-                                        <td className="px-4 py-4 whitespace-nowrap">
-                                            {editingOfficerId === officer.id
-                                                ? <Input value={editFormData?.cedula || ""} onChange={e => handleInputChange("cedula", e.target.value)} />
-                                                : <span className="text-sm text-gray-900">{officer.cedula || "N/A"}</span>}
-                                        </td>
-                                        {/* Código */}
-                                        <td className="px-4 py-4 whitespace-nowrap">
+                                        {/* Código — visible desde sm */}
+                                        <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
                                             {editingOfficerId === officer.id
                                                 ? <Input value={editFormData?.badge || ""} onChange={e => handleInputChange("badge", e.target.value)} />
                                                 : <span className="text-sm font-mono text-gray-900">{officer.badge}</span>}
                                         </td>
-                                        {/* Rango */}
-                                        <td className="px-4 py-4 whitespace-nowrap">
+                                        {/* Rango — visible desde sm */}
+                                        <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
                                             {editingOfficerId === officer.id
                                                 ? <Input value={editFormData?.rank || ""} onChange={e => handleInputChange("rank", e.target.value)} />
                                                 : <span className="text-sm text-gray-900">{officer.rank}</span>}
                                         </td>
-                                        {/* Circunscripción */}
-                                        <td className="px-4 py-4 whitespace-nowrap">
+                                        {/* Cédula — visible desde md */}
+                                        <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
+                                            {editingOfficerId === officer.id
+                                                ? <Input value={editFormData?.cedula || ""} onChange={e => handleInputChange("cedula", e.target.value)} />
+                                                : <span className="text-sm text-gray-900">{officer.cedula || "N/A"}</span>}
+                                        </td>
+                                        {/* Circunscripción — visible desde lg */}
+                                        <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
                                             {editingOfficerId === officer.id
                                                 ? <Select value={editFormData?.circunscripcion?.toString() || ""}
                                                     onValueChange={v => handleInputChange("circunscripcion", parseInt(v))}>
@@ -229,8 +243,8 @@ export default function Officers() {
                                                 </Select>
                                                 : <Badge className="bg-blue-100 text-blue-800">Circ. {officer.circunscripcion || "N/A"}</Badge>}
                                         </td>
-                                        {/* Puesto */}
-                                        <td className="px-4 py-4 whitespace-nowrap">
+                                        {/* Puesto — visible desde lg */}
+                                        <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
                                             {editingOfficerId === officer.id
                                                 ? <Select value={editFormData?.puestoAsignado || ""}
                                                     onValueChange={v => handleInputChange("puestoAsignado", v)}>
@@ -243,8 +257,8 @@ export default function Officers() {
                                                 </Select>
                                                 : <Badge className="bg-purple-100 text-purple-800">{officer.puestoAsignado || "N/A"}</Badge>}
                                         </td>
-                                        {/* Cuadrantes */}
-                                        <td className="px-4 py-4">
+                                        {/* Cuadrantes — visible desde xl */}
+                                        <td className="px-4 py-4 hidden xl:table-cell">
                                             {editingOfficerId === officer.id
                                                 ? <div className="flex flex-wrap gap-1">
                                                     {getAvailableCuadrantes(editFormData?.circunscripcion?.toString()).map(c => (
@@ -258,7 +272,7 @@ export default function Officers() {
                                                         : <span className="text-sm text-gray-500">N/A</span>}
                                                 </div>}
                                         </td>
-                                        {/* Estado */}
+                                        {/* Estado — siempre visible */}
                                         <td className="px-4 py-4 whitespace-nowrap">
                                             {editingOfficerId === officer.id
                                                 ? <Select value={editFormData?.status || ""}
@@ -275,15 +289,13 @@ export default function Officers() {
                                                     {getStatusBadge(officer.status).label}
                                                 </Badge>}
                                         </td>
-                                        {/* Contacto */}
-                                        <td className="px-4 py-4 whitespace-nowrap">
+                                        {/* Contacto — visible desde md */}
+                                        <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
                                             {editingOfficerId === officer.id
-                                                ? <div className="space-y-1">
-                                                    <Input value={editFormData?.phone || ""} onChange={e => handleInputChange("phone", e.target.value)} placeholder="Teléfono" />
-                                                </div>
+                                                ? <Input value={editFormData?.phone || ""} onChange={e => handleInputChange("phone", e.target.value)} placeholder="Teléfono" />
                                                 : <span className="text-sm text-gray-900">{officer.phone || "N/A"}</span>}
                                         </td>
-                                        {/* Acciones */}
+                                        {/* Acciones — siempre visible */}
                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                             {editingOfficerId === officer.id
                                                 ? <div className="flex gap-1">
@@ -301,7 +313,9 @@ export default function Officers() {
                                                         onClick={() => handleEditClick(officer)} data-testid={`button-edit-${officer.id}`}>
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
+                                                    {/* ARREGLADO: ahora abre el modal de horario del oficial */}
                                                     <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-700"
+                                                        onClick={() => setScheduleOfficer(officer)}
                                                         data-testid={`button-schedule-${officer.id}`}>
                                                         <Calendar className="h-4 w-4" />
                                                     </Button>
@@ -320,10 +334,20 @@ export default function Officers() {
                                     : "No se encontraron oficiales."}
                             </p>
                         </div>
-                    )}
+    )}
                 </div>
             </div>
+
             <NewOfficerModal isOpen={isNewOfficerModalOpen} onClose={() => setIsNewOfficerModalOpen(false)} />
+
+            {/* Modal de horario — se abre al pulsar el calendario */}
+            {scheduleOfficer && (
+                <OfficerScheduleModal
+                    officer={scheduleOfficer}
+                    isOpen={!!scheduleOfficer}
+                    onClose={() => setScheduleOfficer(null)}
+                />
+            )}
         </div>
     );
 }
