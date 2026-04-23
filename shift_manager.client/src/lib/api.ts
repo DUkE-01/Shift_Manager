@@ -111,6 +111,7 @@ export interface EmergencyReport {
     assignedAt?: string;
     resolvedAt?: string;
     notes?: string;
+    vistoPorAgente?: boolean;
 }
 
 export interface DashboardStats {
