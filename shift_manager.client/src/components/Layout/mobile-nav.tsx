@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
-import logoAyuntamiento from "../.../assets/Logo_Ayuntamiento.png";
+import logoAyuntamiento from "../../assets/Logo_Ayuntamiento.png";
 import logoRD from "../../assets/Logo_Republica_Dominicana.png";
 import { getCurrentUser } from "@/lib/api";
 import { NotificationBell } from "@/components/ui/notification-bell";
