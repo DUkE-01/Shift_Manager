@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, UserCheck, Clock, AlertTriangle, Save, X, Edit } from "lucide-react";
+import { Search, Plus, UserCheck, Clock, AlertTriangle, Save, X, Edit, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -236,6 +236,11 @@ export default function Reports() {
                                                     <Badge className={getTypeBadge(report.type).className}>{getTypeBadge(report.type).label}</Badge>
                                                     <Badge className={getPriorityBadge(report.priority).className}>{getPriorityBadge(report.priority).label}</Badge>
                                                     <Badge className={getStatusBadge(report.status).className}>{getStatusBadge(report.status).label}</Badge>
+                                                    {!isOficial && report.assignedOfficerId && report.vistoPorAgente === true && (
+                                                        <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm ml-2">
+                                                            <CheckCircle2 className="w-3 h-3 mr-1" /> Leído por el Agente
+                                                        </Badge>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
