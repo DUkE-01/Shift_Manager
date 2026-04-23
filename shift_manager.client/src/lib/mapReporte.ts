@@ -32,5 +32,6 @@ export function mapReporte(r: any): EmergencyReport {
         reportedAt: prop(r, "fechaCreacion", "FechaCreacion") ?? new Date().toISOString(),
         resolvedAt: prop(r, "fechaCierre", "FechaCierre") ?? undefined,
         notes: undefined,
+        vistoPorAgente: prop(r, "vistoPorAgente", "VistoPorAgente") ?? undefined,
     };
 }
