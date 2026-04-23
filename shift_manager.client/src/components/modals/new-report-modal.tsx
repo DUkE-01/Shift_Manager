@@ -76,8 +76,11 @@ export function NewReportModal({ isOpen, onClose }: NewReportModalProps) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="modal-new-report">
-                <DialogHeader><DialogTitle>Crear Nuevo Reporte de Emergencia</DialogTitle></DialogHeader>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="modal-new-report" aria-describedby="new-report-description">
+                <DialogHeader>
+                    <DialogTitle>Crear Nuevo Reporte de Emergencia</DialogTitle>
+                    <p id="new-report-description" className="text-sm text-gray-500 hidden">Llene los detalles para crear una nueva incidencia en la base de datos.</p>
+                </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(d => createReportMutation.mutate(d))} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -128,24 +131,26 @@ export function NewReportModal({ isOpen, onClose }: NewReportModalProps) {
                                 <FormItem><FormLabel>Cuadrante Asignado</FormLabel>
                                     <Select onValueChange={(val) => {
                                             field.onChange(val);
-                                            form.setValue("assignedOfficerId", ""); // Resetear oficial si cambia cuadrante
-                                        }} value={field.value || ""}>
+                                            form.setValue("assignedOfficerId", "none"); // Resetear oficial si cambia cuadrante
+                                        }} value={field.value || "none"}>
                                         <FormControl><SelectTrigger data-testid="select-beat"><SelectValue placeholder="Seleccionar Cuadrante" /></SelectTrigger></FormControl>
                                         <SelectContent>
+                                            <SelectItem value="none" className="hidden">Seleccionar Cuadrante</SelectItem>
                                             {beats?.map(b => <SelectItem key={b.id} value={b.id}>{b.name} — Circunscripción {b.circunscripcion}</SelectItem>)}
                                         </SelectContent>
                                     </Select><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="assignedOfficerId" render={({ field }) => (
                                 <FormItem><FormLabel>Oficial Asignado</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={!selectedBeatId}>
-                                        <FormControl><SelectTrigger data-testid="select-officer"><SelectValue placeholder={!selectedBeatId ? "Primero elija un cuadrante" : "Seleccionar Oficial"} /></SelectTrigger></FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value || "none"} disabled={!selectedBeatId || selectedBeatId === "none"}>
+                                        <FormControl><SelectTrigger data-testid="select-officer"><SelectValue placeholder={!selectedBeatId || selectedBeatId === "none" ? "Primero elija un cuadrante" : "Seleccionar Oficial"} /></SelectTrigger></FormControl>
                                         <SelectContent>
+                                            <SelectItem value="none" className="hidden">Seleccionar Oficial</SelectItem>
                                             {officers?.filter(o => o.status === "on_duty" && o.cuadrantes?.includes(selectedBeatId)).map(o => (
                                                 <SelectItem key={o.id} value={o.id}>{o.name} — {o.badge}</SelectItem>
                                             ))}
-                                            {officers?.filter(o => o.status === "on_duty" && o.cuadrantes?.includes(selectedBeatId)).length === 0 && (
-                                                <SelectItem value="none" disabled>No hay oficiales en este cuadrante</SelectItem>
+                                            {(!officers || officers.filter(o => o.status === "on_duty" && o.cuadrantes?.includes(selectedBeatId)).length === 0) && (
+                                                <SelectItem value="empty" disabled>No hay oficiales activos en este cuadrante</SelectItem>
                                             )}
                                         </SelectContent>
                                     </Select><FormMessage /></FormItem>
