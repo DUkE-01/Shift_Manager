@@ -3,6 +3,7 @@ import logoAyuntamiento from "../../assets/Logo_Ayuntamiento.png";
 import logoRD from "../../assets/Logo_Republica_Dominicana.png";
 import { getCurrentUser, logout } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 const navigationItems = [
     { name: "Panel de Control", href: "/", icon: "tachometer-alt", testId: "nav-dashboard" },
@@ -77,6 +78,7 @@ export function Sidebar() {
                         <p className="text-sm font-medium truncate">{user.username || "Usuario"}</p>
                         <p className="text-xs text-police-blue-300">{user.rol || "—"}</p>
                     </div>
+                    <NotificationBell />
                 </div>
                 <button
                     onClick={handleLogout}
