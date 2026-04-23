@@ -101,38 +101,46 @@ public class ReportesController(ShiftManagerDbContext db) : ControllerBase
     [Authorize(Roles = "Administrador,Supervisor")]
     public async Task<IActionResult> Create([FromBody] ReporteUpsertDto dto)
     {
-        var turnoId = dto.ID_Turno > 0
-            ? dto.ID_Turno
-            : await ResolveDefaultTurnoIdAsync();
-
-        var reporte = new Reporte
+        try 
         {
-            ID_Turno     = turnoId,
-            ID_Agente    = ResolveId(dto.ID_Agente, dto.AssignedOfficerId),
-            ID_Cuadrante = ResolveId(dto.ID_Cuadrante, dto.BeatId),
-            Tipo         = dto.Tipo ?? MapValue(TipoMap, dto.Type, "Novedad"),
-            Descripcion  = dto.Descripcion ?? dto.Description ?? string.Empty,
-            Estado       = "Pendiente",
-            Prioridad    = dto.Prioridad ?? MapValue(PrioridadMap, dto.Priority, "Media"),
-            FechaCreacion = DateTime.UtcNow
-        };
+            var turnoId = dto.ID_Turno > 0
+                ? dto.ID_Turno
+                : await ResolveDefaultTurnoIdAsync();
 
-        db.Reportes.Add(reporte);
-        await db.SaveChangesAsync();
+            var reporte = new Reporte
+            {
+                ID_Turno     = turnoId,
+                ID_Agente    = ResolveId(dto.ID_Agente, dto.AssignedOfficerId),
+                ID_Cuadrante = ResolveId(dto.ID_Cuadrante, dto.BeatId),
+                Tipo         = dto.Tipo ?? MapValue(TipoMap, dto.Type, "Novedad"),
+                Descripcion  = dto.Descripcion ?? dto.Description ?? string.Empty,
+                Estado       = "Pendiente",
+                Prioridad    = dto.Prioridad ?? MapValue(PrioridadMap, dto.Priority, "Media"),
+                FechaCreacion = DateTime.UtcNow
+            };
 
-        if (reporte.ID_Agente > 0)
-        {
-            db.Notificaciones.Add(new Notificacion {
-                IdAgente = reporte.ID_Agente,
-                Titulo = "Nuevo Reporte Asignado",
-                Mensaje = "Incidencia: " + reporte.Tipo + " | " + (reporte.Descripcion.Length > 50 ? reporte.Descripcion.Substring(0, 50) + "..." : reporte.Descripcion),
-                TipoReferencia = "Reporte",
-                ReferenciaId = reporte.ID_Reporte
-            });
+            db.Reportes.Add(reporte);
             await db.SaveChangesAsync();
-        }
 
-        return Ok(reporte);
+            if (reporte.ID_Agente > 0)
+            {
+                db.Notificaciones.Add(new Notificacion {
+                    IdAgente = reporte.ID_Agente,
+                    Titulo = "Nuevo Reporte Asignado",
+                    Mensaje = "Incidencia: " + reporte.Tipo + " | " + (reporte.Descripcion.Length > 50 ? reporte.Descripcion.Substring(0, 50) + "..." : reporte.Descripcion),
+                    TipoReferencia = "Reporte",
+                    ReferenciaId = reporte.ID_Reporte
+                });
+                await db.SaveChangesAsync();
+            }
+
+            return Ok(reporte);
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? "No inner exception";
+            return BadRequest(new { Message = $"CATASTROPHIC DB ERROR: {ex.Message} | INNER: {inner}" });
+        }
     }
 
 
