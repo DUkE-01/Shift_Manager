@@ -180,14 +180,10 @@ public static class ServiceCollectionExtensions
                 }
                 else
                 {
-                    policy.SetIsOriginAllowed(origin =>
-                    {
-                        var cleanOrigin = origin.Trim().TrimEnd('/');
-                        return origins.Any(o => o == cleanOrigin);
-                    })
+                    policy.SetIsOriginAllowed(origin => true)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-.AllowCredentials();
+                    .AllowCredentials();
                 }
             });
         });
