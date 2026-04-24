@@ -1,105 +1,76 @@
-# Shift Manager 👮‍♂️🚑
+# Shift Manager 👮‍♂️🚑📱
 
-**Shift Manager** es una solución Full-Stack profesional diseñada para la gestión operativa de cuerpos de seguridad y emergencias. Permite la administración de turnos, seguimiento de agentes en tiempo real y generación de reportes de incidentes, todo bajo un estricto sistema de control de acceso basado en roles (RBAC) y circunscripciones geográficas.
+**Shift Manager** es una solución multiplataforma (Web & Mobile) de grado profesional diseñada para la gestión operativa de cuerpos de seguridad, policía municipal y servicios de emergencias. 
 
----
-
-### 📦 Portabilidad y Migración
-Si deseas mover este proyecto a otro dispositivo, consulta la [Guía de Migración](MIGRATION_GUIDE.md). He incluido un script llamado `prepare_copy.bat` en la raíz para ayudarte a limpiar archivos temporales antes de copiar el proyecto.
+Esta plataforma permite la administración integral de turnos, seguimiento de agentes, gestión de cuadrantes y un sistema avanzado de reportes de incidencia con notificaciones en tiempo real, operando bajo un esquema robusto de **RBAC (Role-Based Access Control)**.
 
 ---
 
-## 🚀 Arquitectura del Sistema
+## 🚀 Arquitectura Moderna y Multiplataforma
 
-La aplicación está dividida en dos componentes principales:
+El sistema se ha evolucionado para ofrecer una experiencia fluida tanto en escritorio como en dispositivos móviles:
 
-1.  **Backend (API):** Construido con **ASP.NET Core 8**, utilizando SQL Server con Entity Framework Core. Implementa seguridad JWT con rotación de refresh tokens y validaciones de reglas de negocio complejas.
-2.  **Frontend (SPA):** Una interfaz moderna y reactiva construida con **React + Vite** y **TypeScript**. Utiliza **Tailwind CSS** para un diseño premium, **Radix UI** para componentes accesibles y **TanStack Query** para la sincronización eficiente de datos.
+1.  **Backend (API):** **ASP.NET Core 8 (.NET 8)** con arquitectura REST. Utiliza PostgreSQL (Supabase) con estrategias de conexión resilientes y pooling. Seguridad JWT con rotación de tokens.
+2.  **Frontend Web (SPA):** Interfaz premium construida con **React + Vite + TypeScript**. Estilizada con **Tailwind CSS** y componentes accesibles de **Radix UI**.
+3.  **App Móvil Nativa (Android/iOS):** Implementada mediante **Capacitor**, permitiendo la reutilización del 90% del código web mientras se accede a funciones nativas del dispositivo y se mantiene una interfaz adaptada al oficial de campo.
 
 ---
 
-## ✨ Características Principales
+## ✨ Características de Grado Senior
 
--   🔐 **Autenticación Robusta:** Login con JWT, protección de rutas y manejo inteligente de sesiones.
--   👥 **Gestión de Personal:** CRUD completo de agentes con perfiles detallados y rangos.
--   📅 **Calendario de Turnos:** Sistema visual para asignar y supervisar turnos (Diurnos, Vespertinos, Nocturnos).
--   📊 **Dashboard Inteligente:** Visualización de métricas críticas (Agentes activos, Gaps en turnos, Reportes pendientes).
--   🗺️ **Control por Circunscripciones:**
-    -   **Administradores:** Visión y control global de todas las áreas.
-    -   **Supervisores:** Gestión limitada únicamente a los agentes y sectores de su jurisdicción.
-    -   **Agentes:** Acceso de solo lectura a sus propios turnos y reportes.
+-   🔐 **Segurida de Nivel Producción:** Autenticación JWT, gestión de variables de entorno seguras y políticas de CORS dinámicas controladas desde el servidor.
+-   🔔 **Sistema de Notificaciones Bilaterales:** 
+    -   Notificaciones instantáneas a Agentes sobre nuevos reportes o reaperturas.
+    -   Alertas a Administradores/Supervisores cuando un reporte es resuelto (Read Receipts).
+-   📊 **Confirmación de Lectura (Read Receipts):** Los supervisores pueden visualizar si el oficial asignado ya abrió y leyó la notificación en su celular (✓ Leído por el Agente).
+-   📅 **Gestión por Cuadrantes Policiales:** Los supervisores solo gestionan el personal y los incidentes dentro de su jurisdicción geográfica.
+-   🩺 **Health Checks & Telemetría:** Monitoreo de conectividad a la base de datos y logs estructurados con Serilog.
 
 ---
 
 ## 🛠️ Tecnologías
 
-### Backend
-- .NET 8 Web API
-- Entity Framework Core (SQL Server)
-- JWT Bearer Authentication
-- Serilog (Logging estructurado)
-- Swagger / OpenAPI (Documentación de API)
+### Cloud & Infraestructura
+- **Base de Datos:** Supabase (PostgreSQL) con Connection Pooling.
+- **Hosting Backend:** Railway.
+- **Hosting Frontend:** Vercel.
+- **Mobile Bridge:** Capacitor JS.
 
-### Frontend
-- React 18 + Vite
-- TypeScript
-- TanStack Query (React Query)
-- Tailwind CSS + Lucide Icons
-- Radix UI + Framer Motion (Animaciones)
+### Stack Técnico
+- **Backend:** .NET 8, EF Core (Npgsql), Serilog, JWT.
+- **Frontend:** React 18, TanStack Query, Tailwind CSS, Lucide Icons.
 
 ---
 
-## ⚙️ Configuración Local
+## 📱 Generación de App Móvil
 
-### 1. Clonar el repositorio
-```bash
-git clone https://github.com/tu-usuario/Shift_Manager.git
-cd Shift_Manager
-```
+El proyecto utiliza Capacitor para generar ejecutables nativos.
 
-### 2. Configurar Variables de Entorno
-Copia el archivo de plantilla y edítalo con tus credenciales locales:
-```bash
-cp .env.example .env
-```
-*Asegúrate de configurar `DB_CONNECTION` con tu instancia de SQL Server y generar una `JWT_KEY` segura (mínimo 32 caracteres).*
-
-### 3. Levantar el Backend
-```bash
-cd Shift_Manager.Server
-dotnet ef database update
-dotnet run
-```
-
-### 4. Levantar el Frontend
-```bash
-cd shift_manager.client
-npm install
-npm run dev
-```
+1. **Requisitos:** Tener instalado Android Studio (para Android) o Xcode (para iOS).
+2. **Ciclo de Build:**
+   ```bash
+   cd shift_manager.client
+   npm run build
+   npx cap copy
+   npx cap open android # Abre Android Studio para generar el APK/AAB
+   ```
 
 ---
 
-## 🌐 Despliegue (Deployment)
+## 🌐 Variables de Entorno (Producción)
 
-### Frontend (Vercel)
-Este proyecto está optimizado para desplegarse en **Vercel**:
-1. Conecta tu repositorio de GitHub a Vercel.
-2. Configura el **Root Directory** como `shift_manager.client`.
-3. Añade la variable de entorno `VITE_API_URL` apuntando a la URL de tu API de producción.
+Para el correcto funcionamiento en la nube, se deben configurar las siguientes variables:
 
-### Backend (.NET)
-Para el backend, se recomienda el uso de **Railway**, **Azure App Service** o **AWS**:
-1. Configura el servidor para leer las variables de entorno desde el sistema (no subas el `.env`).
-2. Setea `ASPNETCORE_ENVIRONMENT=Production`.
-3. Asegúrate de que las `CORS_ORIGINS` incluyan el dominio de tu frontend en Vercel.
+### Railway (Backend)
+- `CORS_ALLOWED_ORIGINS`: Lista de orígenes permitidos (ej: `capacitor://localhost,http://localhost,https://tusitio.vercel.app`).
+- `ConnectionStrings__DefaultConnection`: Cadena de conexión a Supabase.
+- `Jwt__Key`: Secreto de mínimo 32 caracteres.
+- `ASPNETCORE_ENVIRONMENT`: `Production`.
 
----
-
-## 🔒 Seguridad y Git
-**IMPORTANTE:** El archivo `.env` está incluido en el `.gitignore`. **Nunca** subas tus secretos (DB Connection strings o JWT Keys) a GitHub. Utiliza el panel de "Secrets" de tu plataforma de despliegue o GitHub Actions.
+### Vercel / Local Build (Frontend)
+- `VITE_API_URL`: URL del backend de Railway (sin barra final).
 
 ---
 
 ## 📄 Licencia
-Este proyecto es de uso privado. Todos los derechos reservados.
+Este proyecto es de uso privado para la modernización de servicios municipales. Todos los derechos reservados.
