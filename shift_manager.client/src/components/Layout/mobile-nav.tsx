@@ -79,6 +79,28 @@ export function MobileNav() {
                                 );
                             })}
                         </div>
+
+                         {/* Footer con usuario y logout */}
+            <div className="px-4 py-4 border-t border-police-blue-800">
+                <div className="flex items-center mb-3">
+                    <div className="w-8 h-8 rounded-full bg-police-blue-700 flex items-center justify-center mr-3">
+                        <i className="fas fa-user text-sm"></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{user.username || "Usuario"}</p>
+                        <p className="text-xs text-police-blue-300">{user.rol || "—"}</p>
+                    </div>
+                    <NotificationBell />
+                </div>
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center px-3 py-2 rounded-lg text-police-blue-300 hover:bg-police-blue-800 hover:text-white transition-colors text-sm"
+                    data-testid="button-logout"
+                >
+                    <i className="fas fa-sign-out-alt w-5 mr-3"></i>
+                    Cerrar Sesión
+                </button>
+            </div>
                     </div>
                 </div>
             )}
