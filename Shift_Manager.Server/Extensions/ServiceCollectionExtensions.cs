@@ -154,13 +154,18 @@ public static class ServiceCollectionExtensions
             {
                 origins = envOrigins
         .Split(',', StringSplitOptions.RemoveEmptyEntries)
-        .Select(o => o.Trim().TrimEnd('/')) // 👈 AQUÍ el fix
+        .Select(o => o.Trim().TrimEnd('/')) 
         .ToArray();
             }
         }
 
-        // Si sigue vacío, usamos defaults de desarrollo
-        origins ??= new[] { "http://localhost:5173", "https://localhost:5173" };
+         // 2. Si no hay en Railway, buscamos en appsettings (Prioridad 2)
+    if (origins == null || origins.Length == 0)
+    {
+        origins = config.GetSection($"{CorsOptions.Section}:AllowedOrigins").Get<string[]>();
+    }
+    // 3. Si todo falla, usamos localhost por defecto
+    origins ??= new[] { "http://localhost:5173", "https://localhost:5173" };
 
         services.AddCors(o =>
         {
