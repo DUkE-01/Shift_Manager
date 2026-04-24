@@ -1,8 +1,17 @@
 
 import { mapReporte } from "./mapReporte";
 import { determineShiftColumn, ShiftColumn } from "./shiftUtils";
+import { Preferences } from '@capacitor/preferences';
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
+
+const saveToken = async (token: string) => {
+    if (isNative) { // Detectar si es App o Web
+        await Preferences.set({ key: 'token', value: token });
+    } else {
+        localStorage.setItem('token', token);
+    }
+};
 
 export function getToken(): string | null {
     return localStorage.getItem("access_token");
@@ -231,9 +240,9 @@ function mapTurno(t: any): Shift {
     const obs = prop(t, "observaciones", "Observaciones") ?? "";
     const obsTypeMatch = typeof obs === "string" ? obs.match(/^\[([a-z_]+)\]/) : null;
     const explicitType = prop(t, "tipoTurno", "TipoTurno") ?? (obsTypeMatch ? obsTypeMatch[1] : null);
-    
+
     let shiftType = explicitType ?? inferShiftTypeFromHours(inicio, fin);
-    
+
     // Normalización para el frontend
     const normalize = (val: string): string => {
         const s = val.toLowerCase();
@@ -295,9 +304,9 @@ function mapHorario(h: any, codeToId?: Map<string, string>): Shift {
     const date = prop(h, "fecha", "Fecha") ?? "";
     const startTime = toTime(prop(h, "horaInicio", "HoraInicio"));
     const endTime = toTime(prop(h, "horaFin", "HoraFin"));
-    
+
     let shiftType = prop(h, "tipoTurno", "TipoTurno") ?? "diurno";
-    
+
     // Normalización para el frontend
     const s = shiftType.toLowerCase();
     if (s.includes("vespertino") || s.includes("vesp")) {
@@ -480,7 +489,7 @@ export async function getShifts(): Promise<Shift[]> {
     const all = [...turnos, ...horarios].sort((a, b) =>
         new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     );
-    
+
     // Eliminamos la aniquilacion errónea "latestByOfficerDate" que borraba turnos que ocurrían en el mismo día.
     return all;
 }
@@ -499,7 +508,7 @@ export async function updateShift(compositeId: string, shift: Partial<Shift>): P
         if (shift.endTime) payload.HoraFin = `${shift.endTime}:00`;
         if (shift.shiftType) payload.TipoTurno = shift.shiftType;
         if (shift.notes !== undefined) payload.Observaciones = shift.notes;
-        
+
         const res = await fetchAPI(`/api/horarios/${id}`, {
             method: "PUT",
             body: JSON.stringify(payload),
