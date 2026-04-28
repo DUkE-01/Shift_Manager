@@ -475,11 +475,17 @@ export async function getShifts(): Promise<Shift[]> {
         fetchAPI("/api/agentes"),
     ]);
 
-    const turnos: Shift[] = turnosRes.ok ? (await turnosRes.json()).map((raw: any) => {
-        const mapped = mapTurno(raw);
-        mapped.id = `t_${mapped.id}`;
-        return mapped;
-    }) : [];
+    let turnos: Shift[] = [];
+    if (turnosRes.ok) {
+        const json = await turnosRes.json();
+        // El backend devuelve PagedResult para Admin/Supervisor y List para Agentes
+        const rawList = Array.isArray(json) ? json : (json.items || json.data || []);
+        turnos = rawList.map((raw: any) => {
+            const mapped = mapTurno(raw);
+            mapped.id = `t_${mapped.id}`;
+            return mapped;
+        });
+    }
 
     const horariosRaw = horariosRes.ok ? await horariosRes.json() : [];
     const agentesRaw = agentesRes.ok ? (await agentesRes.json()) : [];

@@ -67,6 +67,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentService, AgentService>();
         services.AddScoped<ITurnoService, TurnoService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<INotificationService, NotificationService>();
         return services;
     }
 

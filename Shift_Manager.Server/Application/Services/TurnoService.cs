@@ -12,12 +12,18 @@ namespace Shift_Manager.Server.Application.Services
     {
         private readonly ITurnoRepository _turnoRepository;
         private readonly IHorarioRepository _horarioRepository;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<TurnoService> _logger;
 
-        public TurnoService(ITurnoRepository turnoRepository, IHorarioRepository horarioRepository, ILogger<TurnoService> logger)
+        public TurnoService(
+            ITurnoRepository turnoRepository, 
+            IHorarioRepository horarioRepository, 
+            INotificationService notificationService,
+            ILogger<TurnoService> logger)
         {
             _turnoRepository = turnoRepository;
             _horarioRepository = horarioRepository;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -85,6 +91,9 @@ namespace Shift_Manager.Server.Application.Services
 
             // Sincronizar con la tabla de Horarios para el Dashboard y Calendario
             await SyncWithHorariosAsync(turno, dto.TipoTurno);
+
+            // Enviar notificaciones
+            await _notificationService.NotifyShiftAssignmentAsync(turno);
 
             return turno.ToDto();
         }
@@ -162,6 +171,9 @@ namespace Shift_Manager.Server.Application.Services
 
             // Sincronizar actualización con Horarios
             await SyncWithHorariosAsync(turno);
+
+            // Enviar notificación de actualización
+            await _notificationService.NotifyShiftAssignmentAsync(turno);
 
             return turno.ToDto();
         }
