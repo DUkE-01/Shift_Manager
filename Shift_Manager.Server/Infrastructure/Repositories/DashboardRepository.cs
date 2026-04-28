@@ -66,6 +66,8 @@ namespace Shift_Manager.Server.Infrastructure.Repositories
                 .Include(h => h.Cuadrante)
                 .Select(h => new TurnoHoyDTO
                 {
+                    IdTurno = h.ID_Turno,
+                    IdHorario = h.IdHorario,
                     Agente = h.Turno!.Agente!.Nombre!,
                     Cuadrante = h.Cuadrante!.Nombre,
                     Turno = h.TipoTurno,

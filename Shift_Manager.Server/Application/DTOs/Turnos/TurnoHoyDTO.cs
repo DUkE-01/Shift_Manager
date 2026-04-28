@@ -2,6 +2,8 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
 {
     public class TurnoHoyDTO
     {
+        public int IdTurno { get; set; }
+        public int IdHorario { get; set; }
         public required string Agente { get; set; }
         public required string Cuadrante { get; set; }
         public required string Turno { get; set; }

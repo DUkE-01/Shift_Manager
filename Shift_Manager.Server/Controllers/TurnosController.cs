@@ -143,9 +143,25 @@ public class TurnosController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = "Administrador,Supervisor")]
     public async Task<IActionResult> Delete(int id)
     {
+        var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+        if (rol == "Supervisor")
+        {
+            var turno = await _turnoService.GetByIdAsync(id);
+            if (turno == null) return NotFound("Turno no encontrado.");
+
+            var userCirc = await GetCircunscripcionDelUsuarioAsync();
+            var agent = await _db.Agentes.AsNoTracking().FirstOrDefaultAsync(a => a.ID_Agente == turno.ID_Agente);
+            
+            if (agent != null)
+            {
+                var targetCirc = CuadranteMapping.GetCircunscripcion(agent.ID_Cuadrante);
+                if (userCirc != targetCirc)
+                    return Forbid("No puede eliminar turnos de agentes de otra circunscripción.");
+            }
+        }
         return await ResultFromService(async () => { await _turnoService.DeleteAsync(id); });
     }
 
