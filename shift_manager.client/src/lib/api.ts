@@ -2,6 +2,9 @@
 import { mapReporte } from "./mapReporte";
 import { determineShiftColumn, ShiftColumn } from "./shiftUtils";
 import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
+
+const isNative = Capacitor.isNativePlatform();
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -22,6 +25,12 @@ export function setAuth(accessToken: string, refreshToken: string, rol: string, 
     localStorage.setItem("refresh_token", refreshToken);
     localStorage.setItem("rol", rol);
     localStorage.setItem("username", username);
+    
+    // Si es nativo, también guardamos en Preferences para persistencia segura
+    if (isNative) {
+        Preferences.set({ key: 'access_token', value: accessToken });
+        Preferences.set({ key: 'refresh_token', value: refreshToken });
+    }
 }
 
 export function clearAuth() {
