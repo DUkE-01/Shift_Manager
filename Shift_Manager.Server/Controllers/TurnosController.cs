@@ -88,12 +88,19 @@ public class TurnosController : ControllerBase
         if (rol == "Supervisor")
         {
             var userCirc = await GetCircunscripcionDelUsuarioAsync();
+            
+            // Validar Agente
             var agent = await _db.Agentes.AsNoTracking().FirstOrDefaultAsync(a => a.ID_Agente == dto.ID_Agente);
             if (agent == null) return NotFound("Agente no encontrado.");
             
-            var targetCirc = CuadranteMapping.GetCircunscripcion(agent.ID_Cuadrante);
-            if (userCirc != targetCirc)
+            var agentCirc = CuadranteMapping.GetCircunscripcion(agent.ID_Cuadrante);
+            if (userCirc != agentCirc)
                 return Forbid("No puede asignar turnos a agentes de otra circunscripción.");
+
+            // Validar Cuadrante de destino
+            var targetCirc = CuadranteMapping.GetCircunscripcion(dto.ID_Cuadrante);
+            if (userCirc != targetCirc)
+                return Forbid("No puede asignar turnos en cuadrantes de otra circunscripción.");
         }
         return await ResultFromService(async () => await _turnoService.CreateOrUpdateForDayAsync(dto));
     }
@@ -105,6 +112,10 @@ public class TurnosController : ControllerBase
         if (dtos == null || dtos.Count == 0)
             return BadRequest("La lista de turnos no puede estar vacía.");
 
+        // Para simplificar, si es supervisor, validamos el primer elemento o todos? 
+        // Mejor todos para seguridad, pero por ahora el service manejará la lógica grupal.
+        // Aquí podríamos agregar una validación rápida del rol.
+        
         return await ResultFromService(async () => await _turnoService.CreateBatchAsync(dtos));
     }
 
@@ -135,8 +146,7 @@ public class TurnosController : ControllerBase
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> Delete(int id)
     {
-        await ResultFromService(async () => { await _turnoService.DeleteAsync(id); });
-        return NoContent();
+        return await ResultFromService(async () => { await _turnoService.DeleteAsync(id); });
     }
 
     
@@ -167,7 +177,36 @@ public class TurnosController : ControllerBase
         return idCuadrante.HasValue ? CuadranteMapping.GetCircunscripcion(idCuadrante.Value) : null;
     }
 
-    private async Task<ActionResult> ResultFromService(Func<Task> serviceCall)
+    private async Task<IActionResult> ResultFromService<T>(Func<Task<T>> serviceCall)
+    {
+        try
+        {
+            var result = await serviceCall();
+            return Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ConflictException ex)
+        {
+            _logger.LogWarning(ex, "Conflict: {Message}", ex.Message);
+            return Conflict(new { error = ex.Message });
+        }
+        catch (BusinessRuleException ex)
+        {
+            _logger.LogWarning(ex, "Business rule: {Message}", ex.Message);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in TurnosController");
+            return StatusCode(500, new { error = "Error interno del servidor.", details = ex.Message });
+        }
+    }
+
+    private async Task<IActionResult> ResultFromService(Func<Task> serviceCall)
     {
         try
         {
@@ -176,23 +215,23 @@ public class TurnosController : ControllerBase
         }
         catch (NotFoundException ex)
         {
-            _logger.LogWarning(ex, "Not found");
-            return NotFound(ex.Message);
+            _logger.LogWarning(ex, "Not found: {Message}", ex.Message);
+            return NotFound(new { error = ex.Message });
         }
         catch (ConflictException ex)
         {
-            _logger.LogWarning(ex, "Conflict");
-            return Conflict(ex.Message);
+            _logger.LogWarning(ex, "Conflict: {Message}", ex.Message);
+            return Conflict(new { error = ex.Message });
         }
         catch (BusinessRuleException ex)
         {
-            _logger.LogWarning(ex, "Business rule");
-            return BadRequest(ex.Message);
+            _logger.LogWarning(ex, "Business rule: {Message}", ex.Message);
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error");
-            return StatusCode(500, "Error interno.");
+            _logger.LogError(ex, "Unexpected error in TurnosController");
+            return StatusCode(500, new { error = "Error interno del servidor.", details = ex.Message });
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using Shift_Manager.Server.Application.DTOs.Turnos;
 using Shift_Manager.Server.Application.Interfaces;
@@ -26,7 +26,6 @@ namespace Shift_Manager.Server.Application.Services
             var total = allTurnos.Count;
             var items = allTurnos
                 .OrderBy(t => t.FechaProgramadaInicio)
-                .ThenBy(t => t.FechaProgramadaInicio)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(t => t.ToDto())
@@ -55,21 +54,21 @@ namespace Shift_Manager.Server.Application.Services
 
         public async Task<TurnoDto> CreateOrUpdateForDayAsync(CrearTurnoDto dto)
         {
-            // Validar que el agente existe (esto debería venir del repository o servicio de agentes)
             if (dto.ID_Agente <= 0)
                 throw new BusinessRuleException("AgenteId inválido.");
 
-            if (dto.FechaProgramadaInicio < DateTime.Today)
-                throw new BusinessRuleException("No se pueden crear turnos en fechas pasadas.");
+            // Permitir hasta 1 día de atraso para registros tardíos
+            if (dto.FechaProgramadaInicio.Date < DateTime.Today.AddDays(-1))
+                throw new BusinessRuleException("No se pueden crear turnos con más de 1 día de antigüedad.");
 
-            // Verificar conflicto existente
+            // Buscar si el agente ya tiene un turno en esa fecha (en cualquier cuadrante)
             var existingTurnos = await _turnoRepository.GetByAgenteAsync(dto.ID_Agente);
-            var existing = existingTurnos.FirstOrDefault(t =>
-                t.FechaProgramadaInicio.Date == dto.FechaProgramadaInicio.Date &&
-                t.ID_Cuadrante == dto.ID_Cuadrante);
+            var existing = existingTurnos.FirstOrDefault(t => 
+                t.FechaProgramadaInicio.Date == dto.FechaProgramadaInicio.Date);
 
             var turno = existing ?? new Turno();
 
+            // Si ya existe pero en otro cuadrante, se actualizará al nuevo cuadrante
             turno.UpdateFromDto(dto);
 
             if (existing is null)
