@@ -11,11 +11,13 @@ namespace Shift_Manager.Server.Application.Services
     public class TurnoService : ITurnoService
     {
         private readonly ITurnoRepository _turnoRepository;
+        private readonly IHorarioRepository _horarioRepository;
         private readonly ILogger<TurnoService> _logger;
 
-        public TurnoService(ITurnoRepository turnoRepository, ILogger<TurnoService> logger)
+        public TurnoService(ITurnoRepository turnoRepository, IHorarioRepository horarioRepository, ILogger<TurnoService> logger)
         {
             _turnoRepository = turnoRepository;
+            _horarioRepository = horarioRepository;
             _logger = logger;
         }
 
@@ -81,7 +83,51 @@ namespace Shift_Manager.Server.Application.Services
                 await _turnoRepository.UpdateAsync(turno);
             }
 
+            // Sincronizar con la tabla de Horarios para el Dashboard y Calendario
+            await SyncWithHorariosAsync(turno, dto.TipoTurno);
+
             return turno.ToDto();
+        }
+
+        private async Task SyncWithHorariosAsync(Turno turno, string? tipoTurno = null)
+        {
+            try
+            {
+                var horarios = await _horarioRepository.GetAllAsync();
+                var horario = horarios.FirstOrDefault(h => h.ID_Turno == turno.ID_Turno) ?? new Horario();
+
+                horario.ID_Turno = turno.ID_Turno;
+                horario.IdAgente = turno.ID_Agente.ToString();
+                horario.IdCuadrante = turno.ID_Cuadrante;
+                horario.Fecha = DateOnly.FromDateTime(turno.FechaProgramadaInicio);
+                horario.HoraInicio = TimeOnly.FromDateTime(turno.FechaProgramadaInicio);
+                horario.HoraFin = TimeOnly.FromDateTime(turno.FechaProgramadaFin);
+                
+                if (!string.IsNullOrEmpty(tipoTurno))
+                    horario.TipoTurno = tipoTurno;
+                else if (string.IsNullOrEmpty(horario.TipoTurno))
+                    horario.TipoTurno = "diurno";
+
+                horario.Estado = turno.Estado ?? "Activo";
+                horario.Observaciones = turno.Observaciones;
+
+                if (horario.IdHorario == 0)
+                {
+                    horario.FechaCreacion = DateTime.UtcNow;
+                    horario.UsuarioCreacion = "System"; // Idealmente pasar el usuario actual
+                    await _horarioRepository.AddAsync(horario);
+                }
+                else
+                {
+                    horario.FechaModificacion = DateTime.UtcNow;
+                    horario.UsuarioModificacion = "System";
+                    await _horarioRepository.UpdateAsync(horario);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sincronizando turno {TurnoId} con tabla Horarios", turno.ID_Turno);
+            }
         }
 
         public async Task<IEnumerable<TurnoDto>> CreateBatchAsync(List<CrearTurnoDto> dtos)
@@ -114,11 +160,22 @@ namespace Shift_Manager.Server.Application.Services
             turno.UpdateFromDto(dto);
             await _turnoRepository.UpdateAsync(turno);
 
+            // Sincronizar actualización con Horarios
+            await SyncWithHorariosAsync(turno);
+
             return turno.ToDto();
         }
 
         public async Task DeleteAsync(int id)
         {
+            // Eliminar horario asociado primero
+            var horarios = await _horarioRepository.GetAllAsync();
+            var horario = horarios.FirstOrDefault(h => h.ID_Turno == id);
+            if (horario != null)
+            {
+                await _horarioRepository.DeleteAsync(horario.IdHorario);
+            }
+
             await _turnoRepository.DeleteAsync(id);
         }
     }
