@@ -22,8 +22,9 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
 
         public static void UpdateFromDto(this Turno turno, CrearTurnoDto dto)
         {
-            turno.FechaProgramadaInicio = dto.FechaProgramadaInicio;
-            turno.FechaProgramadaFin = dto.FechaProgramadaFin;
+            // Asegurar que las fechas tengan Kind=Utc para compatibilidad con PostgreSQL timestamptz
+            turno.FechaProgramadaInicio = DateTime.SpecifyKind(dto.FechaProgramadaInicio, DateTimeKind.Utc);
+            turno.FechaProgramadaFin = DateTime.SpecifyKind(dto.FechaProgramadaFin, DateTimeKind.Utc);
             turno.ID_Agente = dto.ID_Agente;
             turno.ID_Cuadrante = dto.ID_Cuadrante;
             turno.Observaciones = dto.Observaciones;
@@ -38,9 +39,9 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
         public static void UpdateFromDto(this Turno turno, ActualizarTurnoDto dto)
         {
             if (dto.FechaProgramadaInicio.HasValue)
-                turno.FechaProgramadaInicio = dto.FechaProgramadaInicio.Value;
+                turno.FechaProgramadaInicio = DateTime.SpecifyKind(dto.FechaProgramadaInicio.Value, DateTimeKind.Utc);
             if (dto.FechaProgramadaFin.HasValue)
-                turno.FechaProgramadaFin = dto.FechaProgramadaFin.Value;
+                turno.FechaProgramadaFin = DateTime.SpecifyKind(dto.FechaProgramadaFin.Value, DateTimeKind.Utc);
             if (dto.ID_Agente.HasValue)
                 turno.ID_Agente = dto.ID_Agente.Value;
             if (dto.ID_Cuadrante.HasValue)

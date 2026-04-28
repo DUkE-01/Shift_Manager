@@ -201,8 +201,12 @@ public class TurnosController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error in TurnosController");
-            return StatusCode(500, new { error = "Error interno del servidor.", details = ex.Message });
+            _logger.LogError(ex, "Unexpected error in TurnosController: {Message}", ex.Message);
+            return StatusCode(500, new { 
+                error = "Error interno del servidor.", 
+                details = ex.Message,
+                innerError = ex.InnerException?.Message 
+            });
         }
     }
 
@@ -230,8 +234,12 @@ public class TurnosController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error in TurnosController");
-            return StatusCode(500, new { error = "Error interno del servidor.", details = ex.Message });
+            _logger.LogError(ex, "Unexpected error in TurnosController: {Message}", ex.Message);
+            return StatusCode(500, new { 
+                error = "Error interno del servidor.", 
+                details = ex.Message,
+                innerError = ex.InnerException?.Message 
+            });
         }
     }
 }

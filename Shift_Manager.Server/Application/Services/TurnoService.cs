@@ -58,7 +58,8 @@ namespace Shift_Manager.Server.Application.Services
                 throw new BusinessRuleException("AgenteId inválido.");
 
             // Permitir hasta 1 día de atraso para registros tardíos
-            if (dto.FechaProgramadaInicio.Date < DateTime.Today.AddDays(-1))
+            // Usamos UtcNow.Date para ser consistentes con la BD que es PostgreSQL timestamptz
+            if (dto.FechaProgramadaInicio.Date < DateTime.UtcNow.Date.AddDays(-1))
                 throw new BusinessRuleException("No se pueden crear turnos con más de 1 día de antigüedad.");
 
             // Buscar si el agente ya tiene un turno en esa fecha (en cualquier cuadrante)
