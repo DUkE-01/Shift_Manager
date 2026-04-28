@@ -466,7 +466,7 @@ export async function getShifts(): Promise<Shift[]> {
         fetchAPI("/api/agentes"),
     ]);
 
-    const turnos = turnosRes.ok ? (await turnosRes.json()).map((raw: any) => {
+    const turnos: Shift[] = turnosRes.ok ? (await turnosRes.json()).map((raw: any) => {
         const mapped = mapTurno(raw);
         mapped.id = `t_${mapped.id}`;
         return mapped;
@@ -481,7 +481,7 @@ export async function getShifts(): Promise<Shift[]> {
         if (a.badge) codeToId.set(a.badge, a.id);
     });
 
-    const horarios = horariosRaw.length > 0
+    const horarios: Shift[] = horariosRaw.length > 0
         ? horariosRaw.map((h: any) => {
             const mapped = mapHorario(h, codeToId);
             mapped.id = `h_${mapped.id}`;
