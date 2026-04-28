@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<() => Promise<void> | null>(null);
+  const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
 
   const { notify } = useNotifications();
 
@@ -91,14 +91,14 @@ export default function Dashboard() {
   const openConfirm = (title: string, message: string, action: () => Promise<void>) => {
     setConfirmTitle(title);
     setConfirmMessage(message);
-    setConfirmAction(() => action);
+    setConfirmAction(() => action); // Usar patrón de función para guardar la función
     setConfirmOpen(true);
   };
 
   const closeConfirm = () => {
     if (confirmLoading) return;
     setConfirmOpen(false);
-    setConfirmAction(null);
+    setConfirmAction(null); // Ahora null es válido
     setConfirmTitle("");
     setConfirmMessage("");
   };
