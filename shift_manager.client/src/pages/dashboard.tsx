@@ -42,7 +42,7 @@ export default function Dashboard() {
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
-  const today       = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA"); // Retorna yyyy-mm-dd de forma segura en local
   const todayShifts = shifts?.filter(s => s.date === today) || [];
   const currentShifts = todayShifts.map(shift => ({
     shift,

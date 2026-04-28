@@ -234,7 +234,8 @@ function mapTurno(t: any): Shift {
     const cuadranteId = prop(t, "iD_Cuadrante", "id_Cuadrante", "idCuadrante", "ID_Cuadrante");
     const estado = prop(t, "estado", "Estado") ?? "";
 
-    const date = inicio ? inicio.split("T")[0] : "";
+    // Asegurar que solo tomamos la parte de la fecha (yyyy-MM-dd)
+    const date = inicio ? (inicio.includes("T") ? inicio.split("T")[0] : inicio.split(" ")[0]) : "";
     const startTime = inicio ? toTime(inicio) : "00:00";
     const endTime = fin ? toTime(fin) : "00:00";
     const obs = prop(t, "observaciones", "Observaciones") ?? "";
@@ -301,7 +302,10 @@ function mapHorario(h: any, codeToId?: Map<string, string>): Shift {
         if (resolved) officerId = resolved;
     }
 
-    const date = prop(h, "fecha", "Fecha") ?? "";
+    // Asegurar que solo tomamos la parte de la fecha (yyyy-MM-dd)
+    let date = prop(h, "fecha", "Fecha") ?? "";
+    if (date.includes("T")) date = date.split("T")[0];
+    else if (date.includes(" ")) date = date.split(" ")[0];
     const startTime = toTime(prop(h, "horaInicio", "HoraInicio"));
     const endTime = toTime(prop(h, "horaFin", "HoraFin"));
 
@@ -486,11 +490,15 @@ export async function getShifts(): Promise<Shift[]> {
         : [];
 
     // Ahora ambos ecosistemas coexisten sin matarse por el mismo ID.
-    const all = [...turnos, ...horarios].sort((a, b) =>
+    // Deduplicar: Si un turno existe en ambas tablas, preferimos el de la tabla Turnos (t_)
+    // pero mantenemos los Horarios (h_) que no tengan un Turno asociado.
+    const turnosIds = new Set(turnos.map(t => t.id.replace("t_", "")));
+    const uniqueHorarios = horarios.filter(h => !turnosIds.has(h.id.replace("h_", "")));
+
+    const all = [...turnos, ...uniqueHorarios].sort((a, b) =>
         new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     );
 
-    // Eliminamos la aniquilacion errónea "latestByOfficerDate" que borraba turnos que ocurrían en el mismo día.
     return all;
 }
 
