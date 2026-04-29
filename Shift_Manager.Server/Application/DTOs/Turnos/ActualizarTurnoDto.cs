@@ -1,17 +1,15 @@
+using System;
+
 namespace Shift_Manager.Server.Application.DTOs.Turnos;
 
-/// <summary>DTO for partial updates to an existing turno (PATCH / PUT semantics).</summary>
-public sealed record ActualizarTurnoDto
-{
-    public int? ID_Agente { get; init; }
-    public int? ID_Cuadrante { get; init; }
-    public DateTime? FechaProgramadaInicio { get; init; }
-    public DateTime? FechaProgramadaFin { get; init; }
-    public string? Estado { get; init; }
-    public string? Observaciones { get; init; }
-    public string? TipoTurno { get; init; }
-    
-    // Metadata para jerarquías
-    public string? RequesterRole { get; init; }
-    public int? RequesterAgenteId { get; init; }
-}
+public sealed record ActualizarTurnoDto(
+    int? ID_Agente = null,
+    int? ID_Cuadrante = null,
+    DateTime? FechaProgramadaInicio = null,
+    DateTime? FechaProgramadaFin = null,
+    string? Estado = null,
+    string? Observaciones = null,
+    string? TipoTurno = null,
+    string? RequesterRole = null,
+    int? RequesterAgenteId = null
+);
