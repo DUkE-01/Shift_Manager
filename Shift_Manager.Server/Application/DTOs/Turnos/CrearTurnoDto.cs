@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Shift_Manager.Server.Application.DTOs.Turnos
 {
-    public class CrearTurnoDto
+    public record CrearTurnoDto
     {
         [Required]
         public int ID_Agente { get; set; }

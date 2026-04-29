@@ -1,7 +1,7 @@
 namespace Shift_Manager.Server.Application.DTOs.Turnos;
 
 /// <summary>DTO for partial updates to an existing turno (PATCH / PUT semantics).</summary>
-public sealed class ActualizarTurnoDto
+public sealed record ActualizarTurnoDto
 {
     public int? ID_Agente { get; init; }
     public int? ID_Cuadrante { get; init; }

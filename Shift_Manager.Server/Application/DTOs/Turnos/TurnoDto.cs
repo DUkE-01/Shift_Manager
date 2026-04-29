@@ -12,5 +12,6 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
         public DateTime FechaFin { get; set; }
         public required string Estado { get; set; }
         public string? Observaciones { get; set; }
+        public string? CreatedByRole { get; set; }
     }
 }

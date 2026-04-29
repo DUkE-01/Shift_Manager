@@ -102,11 +102,16 @@ public class TurnosController : ControllerBase
         if (dtos == null || dtos.Count == 0)
             return BadRequest("La lista de turnos no puede estar vacía.");
 
-        // Para simplificar, si es supervisor, validamos el primer elemento o todos? 
-        // Mejor todos para seguridad, pero por ahora el service manejará la lógica grupal.
-        // Aquí podríamos agregar una validación rápida del rol.
+        var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+        var agenteId = await GetAgenteIdAsync();
+
+        // Enriquecemos todos los DTOs del lote con la info del solicitante
+        var enrichedDtos = dtos.Select(d => d with { 
+            RequesterRole = rol, 
+            RequesterAgenteId = agenteId 
+        }).ToList();
         
-        return await ResultFromService(async () => await _turnoService.CreateBatchAsync(dtos));
+        return await ResultFromService(async () => await _turnoService.CreateBatchAsync(enrichedDtos));
     }
 
     [HttpPut("{id:int}")]

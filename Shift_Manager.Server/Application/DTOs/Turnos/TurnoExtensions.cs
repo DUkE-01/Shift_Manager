@@ -17,7 +17,8 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
             FechaInicio = turno.FechaProgramadaInicio,
             FechaFin = turno.FechaProgramadaFin,
             Estado = turno.Estado ?? string.Empty,
-            Observaciones = turno.Observaciones
+            Observaciones = turno.Observaciones,
+            CreatedByRole = turno.CreatedByRole
         };
 
         public static void UpdateFromDto(this Turno turno, CrearTurnoDto dto)
