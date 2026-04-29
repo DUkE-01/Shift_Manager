@@ -42,32 +42,40 @@ namespace Shift_Manager.Server.Application.Services
                     _logger.LogWarning("No se pudo enviar notificación al Agente {AgenteId}: Registro no encontrado.", turno.ID_Agente);
                 }
 
-                // 2. Notificar a los Supervisores del Cuadrante
-                var circunscripcion = CuadranteMapping.GetCircunscripcion(turno.ID_Cuadrante);
-                if (circunscripcion == null)
+                // 2. Notificar a los Supervisores de la Circunscripción
+                var cuadrante = await _context.Cuadrantes.AsNoTracking().FirstOrDefaultAsync(c => c.ID_Cuadrante == turno.ID_Cuadrante);
+                int? circunscripcion = cuadrante?.Circunscripcion;
+                
+                // Si la DB no tiene la circunscripción aún (porque no se ha ejecutado el SQL), usamos el Helper como respaldo
+                if (circunscripcion == null || circunscripcion == 0)
                 {
-                    _logger.LogWarning("No se pudo determinar circunscripción para Cuadrante {CuadranteId}. No se notificará a supervisores.", turno.ID_Cuadrante);
+                    circunscripcion = CuadranteMapping.GetCircunscripcion(turno.ID_Cuadrante);
                 }
-                else
+
+                if (circunscripcion != null)
                 {
                     var supervisores = await _context.UsuariosSistema
                         .AsNoTracking()
                         .Include(u => u.Agente)
+                        .ThenInclude(a => a!.Cuadrante)
                         .Where(u => u.Rol == "Supervisor" && u.ID_Agente != null)
                         .ToListAsync();
 
                     int countSup = 0;
                     foreach (var sup in supervisores)
                     {
-                        if (sup.Agente != null)
+                        if (sup.Agente?.Cuadrante != null)
                         {
-                            var supCirc = CuadranteMapping.GetCircunscripcion(sup.Agente.ID_Cuadrante);
+                            // Comparamos por circunscripcion de la DB o del Helper
+                            int? supCirc = sup.Agente.Cuadrante.Circunscripcion;
+                            if (supCirc == null || supCirc == 0) supCirc = CuadranteMapping.GetCircunscripcion(sup.Agente.ID_Cuadrante);
+
                             if (supCirc == circunscripcion)
                             {
                                 await SendNotificationAsync(
                                     sup.ID_Agente!.Value,
                                     "Turno en su Jurisdicción",
-                                    $"Se asignó un turno al oficial {agente?.Nombre} {agente?.Apellido} en el cuadrante {turno.ID_Cuadrante}.",
+                                    $"Se asignó un turno al oficial {agente?.Nombre} {agente?.Apellido} en la Circunscripción {circunscripcion}.",
                                     "Turno",
                                     turno.ID_Turno
                                 );
