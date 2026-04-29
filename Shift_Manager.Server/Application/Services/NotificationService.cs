@@ -25,18 +25,18 @@ namespace Shift_Manager.Server.Application.Services
                     "[Notif] Turno={TurnoId} | Agente={AgenteId} | Cuadrante={CuadranteId}",
                     turno.ID_Turno, turno.ID_Agente, turno.ID_Cuadrante);
 
-                // ── 1. Cargar el agente desde la BD (no confiar en lo que trae el turno) ──
+                // ── 1. Cargar el agente desde la BD ─────────────────────────────────────
                 var agente = await _context.Agentes
                     .AsNoTracking()
                     .FirstOrDefaultAsync(a => a.ID_Agente == turno.ID_Agente);
 
                 if (agente == null)
                 {
-                    _logger.LogWarning("[Notif] Agente {AgenteId} no encontrado en BD. Abortando.", turno.ID_Agente);
+                    _logger.LogWarning("[Notif] Agente {AgenteId} no encontrado. Abortando.", turno.ID_Agente);
                     return;
                 }
 
-                // ── 2. Notificar al Oficial ───────────────────────────────────────────────
+                // ── 2. Notificar al Oficial ──────────────────────────────────────────────
                 await SendNotificationAsync(
                     agente.ID_Agente,
                     "Nuevo Turno Asignado",
@@ -47,24 +47,19 @@ namespace Shift_Manager.Server.Application.Services
                 );
                 _logger.LogInformation("[Notif] ✔ Oficial notificado → AgenteId={AgenteId}", agente.ID_Agente);
 
-                // ── 3. Resolver circunscripción ───────────────────────────────────────────
-                // Primero intentamos desde la BD, luego desde el Helper como fallback.
+                // ── 3. Resolver circunscripción del turno ────────────────────────────────
+                // Primero desde la BD; si Circunscripcion == 0 o null, usamos el Helper.
                 var cuadranteTurno = await _context.Cuadrantes
                     .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.ID_Cuadrante == turno.ID_Cuadrante);
 
-                int? circunscripcion = null;
-
-                if (cuadranteTurno?.Circunscripcion is int c && c != 0)
-                    circunscripcion = c;
-                else
-                    circunscripcion = CuadranteMapping.GetCircunscripcion(turno.ID_Cuadrante);
+                int? circunscripcion = (cuadranteTurno?.Circunscripcion is int c && c != 0)
+                    ? c
+                    : CuadranteMapping.GetCircunscripcion(turno.ID_Cuadrante);
 
                 _logger.LogInformation(
-                    "[Notif] Cuadrante={CuadranteId} → Circunscripción={Circ} (fuente: {Fuente})",
-                    turno.ID_Cuadrante,
-                    circunscripcion,
-                    cuadranteTurno?.Circunscripcion != null ? "BD" : "Helper");
+                    "[Notif] Cuadrante={CuadranteId} → Circunscripción={Circ}",
+                    turno.ID_Cuadrante, circunscripcion);
 
                 if (circunscripcion == null)
                 {
@@ -74,7 +69,7 @@ namespace Shift_Manager.Server.Application.Services
                     return;
                 }
 
-                // ── 4. Cargar supervisores con su cuadrante en una sola consulta ──────────
+                // ── 4. Notificar a Supervisores de esa circunscripción ───────────────────
                 var supervisores = await _context.UsuariosSistema
                     .AsNoTracking()
                     .Where(u => u.Rol == "Supervisor" && u.ID_Agente != null)
@@ -82,38 +77,24 @@ namespace Shift_Manager.Server.Application.Services
                         .ThenInclude(a => a!.Cuadrante)
                     .ToListAsync();
 
-                _logger.LogInformation("[Notif] Total supervisores encontrados: {Count}", supervisores.Count);
+                _logger.LogInformation("[Notif] Supervisores encontrados: {Count}", supervisores.Count);
 
-                // ── 5. Filtrar y notificar por circunscripción ───────────────────────────
                 int countNotificados = 0;
-
                 foreach (var sup in supervisores)
                 {
-                    if (sup.ID_Agente == null)
+                    if (sup.ID_Agente == null || sup.Agente == null)
                     {
-                        _logger.LogWarning("[Notif] Supervisor UsuarioId={Id} sin ID_Agente. Omitido.", sup.ID_Usuario);
-                        continue;
-                    }
-
-                    if (sup.Agente == null)
-                    {
-                        _logger.LogWarning("[Notif] Supervisor AgenteId={Id} sin entidad Agente cargada. Omitido.", sup.ID_Agente);
-                        continue;
-                    }
-
-                    if (sup.Agente.Cuadrante == null)
-                    {
-                        _logger.LogWarning("[Notif] Supervisor AgenteId={Id} sin Cuadrante asociado. Omitido.", sup.ID_Agente);
+                        _logger.LogWarning("[Notif] Supervisor UsuarioId={Id} sin Agente. Omitido.", sup.ID_Usuario);
                         continue;
                     }
 
                     // Resolver circunscripción del supervisor igual que la del turno
-                    int? supCirc = (sup.Agente.Cuadrante.Circunscripcion is int sc && sc != 0)
+                    int? supCirc = (sup.Agente.Cuadrante?.Circunscripcion is int sc && sc != 0)
                         ? sc
                         : CuadranteMapping.GetCircunscripcion(sup.Agente.ID_Cuadrante);
 
                     _logger.LogDebug(
-                        "[Notif] Supervisor AgenteId={SupId} → Cuadrante={CuadId} → Circunscripción={SupCirc} (turno necesita {TurnoCirc})",
+                        "[Notif] Sup AgenteId={SupId} Cuadrante={CuadId} Circ={SupCirc} (necesita {TurnoCirc})",
                         sup.ID_Agente, sup.Agente.ID_Cuadrante, supCirc, circunscripcion);
 
                     if (supCirc != circunscripcion) continue;
@@ -122,15 +103,13 @@ namespace Shift_Manager.Server.Application.Services
                         sup.ID_Agente.Value,
                         "Turno en su Jurisdicción",
                         $"Se asignó un turno al oficial {agente.Nombre} {agente.Apellido} " +
-                        $"en la Circunscripción {circunscripcion} el " +
+                        $"(Circ. {circunscripcion}) el " +
                         $"{turno.FechaProgramadaInicio:dd/MM/yyyy} a las {turno.FechaProgramadaInicio:HH:mm}.",
                         "Turno",
                         turno.ID_Turno
                     );
                     countNotificados++;
-
-                    _logger.LogInformation(
-                        "[Notif] ✔ Supervisor notificado → AgenteId={SupId}", sup.ID_Agente);
+                    _logger.LogInformation("[Notif] ✔ Supervisor notificado → AgenteId={Id}", sup.ID_Agente);
                 }
 
                 _logger.LogInformation(
@@ -162,7 +141,7 @@ namespace Shift_Manager.Server.Application.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation(
-                "[Notif] Guardada en BD → AgenteId={AgenteId} | Titulo={Titulo}",
+                "[Notif] ✔ Guardada en BD → AgenteId={AgenteId} | Titulo={Titulo}",
                 idAgente, titulo);
         }
     }

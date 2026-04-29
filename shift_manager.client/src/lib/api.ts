@@ -520,37 +520,43 @@ export async function getShifts(): Promise<Shift[]> {
 export async function updateShift(compositeId: string, shift: Partial<Shift>): Promise<Shift> {
     const isHorario = compositeId.startsWith("h_");
     const id = compositeId.replace("t_", "").replace("h_", "");
-
+ 
     if (isHorario) {
-        // Enrutamiento correcto a Horarios si fue un Horario
         const payload: any = { IdHorario: Number(id) };
-        if (shift.officerId) payload.IdAgente = Number(shift.officerId);
-        if (shift.beatId) payload.IdCuadrante = Number(shift.beatId);
-        if (shift.date) payload.Fecha = shift.date;
-        if (shift.startTime) payload.HoraInicio = `${shift.startTime}:00`;
-        if (shift.endTime) payload.HoraFin = `${shift.endTime}:00`;
-        if (shift.shiftType) payload.TipoTurno = shift.shiftType;
-        if (shift.notes !== undefined) payload.Observaciones = shift.notes;
-
+        if (shift.officerId)            payload.IdAgente    = Number(shift.officerId);
+        if (shift.beatId)               payload.IdCuadrante = Number(shift.beatId);
+        if (shift.date)                 payload.Fecha       = shift.date;
+        if (shift.startTime)            payload.HoraInicio  = `${shift.startTime}:00`;
+        if (shift.endTime)              payload.HoraFin     = `${shift.endTime}:00`;
+        if (shift.shiftType)            payload.TipoTurno   = shift.shiftType;   // ← añadido
+        if (shift.notes !== undefined)  payload.Observaciones = shift.notes;
+ 
         const res = await fetchAPI(`/api/horarios/${id}`, {
             method: "PUT",
-            body: JSON.stringify(payload),
+            body:   JSON.stringify(payload),
         });
         if (!res.ok) throw new Error(await res.text() || "Error actualizando horario");
         const mapRes = mapHorario(await res.json());
         mapRes.id = `h_${mapRes.id}`;
         return mapRes;
     }
-
-    // Ruta estandar para Turnos
+ 
+    // ── Ruta estándar para Turnos ────────────────────────────────────────────
     const payload: any = {};
-    if (shift.officerId) payload.ID_Agente = Number(shift.officerId);
-    if (shift.beatId) payload.ID_Cuadrante = Number(shift.beatId);
-    if (shift.date && shift.startTime) payload.FechaProgramadaInicio = `${shift.date}T${shift.startTime}:00`;
+ 
+    if (shift.officerId)  payload.ID_Agente    = Number(shift.officerId);
+    if (shift.beatId)     payload.ID_Cuadrante = Number(shift.beatId);
+    if (shift.shiftType)  payload.TipoTurno    = shift.shiftType;             // ← añadido
+ 
+    // Fechas: construir ISO desde date + startTime / endTime
+    if (shift.date && shift.startTime) {
+        payload.FechaProgramadaInicio = `${shift.date}T${shift.startTime}:00`;
+    }
     if (shift.date && shift.endTime) {
         const [sh] = (shift.startTime ?? "00:00").split(":").map(Number);
-        const [eh] = (shift.endTime).split(":").map(Number);
+        const [eh] = shift.endTime.split(":").map(Number);
         if (eh < sh) {
+            // Cruza medianoche → fecha fin = date + 1
             const next = new Date(shift.date + "T00:00:00");
             next.setDate(next.getDate() + 1);
             payload.FechaProgramadaFin = `${next.toISOString().split("T")[0]}T${shift.endTime}:00`;
@@ -558,11 +564,12 @@ export async function updateShift(compositeId: string, shift: Partial<Shift>): P
             payload.FechaProgramadaFin = `${shift.date}T${shift.endTime}:00`;
         }
     }
+ 
     if (shift.notes !== undefined) payload.Observaciones = shift.notes;
-
+ 
     const res = await fetchAPI(`/api/turnos/${id}`, {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body:   JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(await res.text() || "Error actualizando turno");
     const mapRes = mapTurno(await res.json());

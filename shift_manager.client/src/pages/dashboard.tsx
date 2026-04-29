@@ -5,45 +5,46 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { NewShiftModal } from "@/components/modals/new-shift-modal";
+import { EditShiftModal } from "@/components/modals/edit-shift-modal";
 import { DashboardStats, Officer, Beat, Shift } from "@/lib/types";
-import { createShift, updateShift, deleteShift } from "@/lib/api";
+import { deleteShift } from "@/lib/api";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useNotifications } from "@/components/NotificationProvider";
 
 export default function Dashboard() {
   const [isNewShiftModalOpen, setIsNewShiftModalOpen] = useState(false);
   const [isRefreshing,        setIsRefreshing]        = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingShift, setEditingShift] = useState<Partial<Shift> | null>(null);
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTitle, setConfirmTitle] = useState("");
+  // ── Estado de edición simplificado ──────────────────────────────────────────
+  const [editingShift, setEditingShift] = useState<Shift | null>(null);
+
+  const [confirmOpen,    setConfirmOpen]    = useState(false);
+  const [confirmTitle,   setConfirmTitle]   = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
+  const [confirmAction,  setConfirmAction]  = useState<(() => Promise<void>) | null>(null);
 
   const { notify } = useNotifications();
-
   const queryClient = useQueryClient();
 
-  const { data: stats     } = useQuery<DashboardStats>({ queryKey: ["/api/dashboard/stats"]    });
-  const { data: officers  } = useQuery<Officer[]>({      queryKey: ["/api/officers"]            });
-  const { data: beats     } = useQuery<Beat[]>({         queryKey: ["/api/beats"]               });
-  const { data: shifts    } = useQuery<Shift[]>({        queryKey: ["/api/shifts"]              });
+  const { data: stats    } = useQuery<DashboardStats>({ queryKey: ["/api/dashboard/stats"] });
+  const { data: officers } = useQuery<Officer[]>({      queryKey: ["/api/officers"]         });
+  const { data: beats    } = useQuery<Beat[]>({         queryKey: ["/api/beats"]            });
+  const { data: shifts   } = useQuery<Shift[]>({        queryKey: ["/api/shifts"]           });
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"]   }),
-      queryClient.invalidateQueries({ queryKey: ["/api/officers"]          }),
-      queryClient.invalidateQueries({ queryKey: ["/api/beats"]             }),
-      queryClient.invalidateQueries({ queryKey: ["/api/shifts"]            }),
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/officers"]        }),
+      queryClient.invalidateQueries({ queryKey: ["/api/beats"]           }),
+      queryClient.invalidateQueries({ queryKey: ["/api/shifts"]          }),
     ]);
     setTimeout(() => setIsRefreshing(false), 600);
   };
 
-  const today = new Date().toLocaleDateString("en-CA"); // Retorna yyyy-mm-dd de forma segura en local
-  const todayShifts = shifts?.filter(s => s.date === today) || [];
+  const today = new Date().toLocaleDateString("en-CA");
+  const todayShifts  = shifts?.filter(s => s.date === today) || [];
   const currentShifts = todayShifts.map(shift => ({
     shift,
     officer: officers?.find(o => o.id === shift.officerId),
@@ -70,35 +71,22 @@ export default function Dashboard() {
     return { name: puesto, total: list.length, onDuty };
   });
 
-  const openEditModal = (shift?: Shift) => {
-    if (shift) {
-      setEditingShift({ ...shift });
-    } else {
-      setEditingShift({
-        date: new Date().toISOString().split("T")[0],
-        startTime: "07:00",
-        endTime: "18:00",
-      });
-    }
-    setEditModalOpen(true);
-  };
+  // ── Handlers de edición ─────────────────────────────────────────────────────
+  const openEditModal  = (shift: Shift) => setEditingShift(shift);
+  const closeEditModal = ()             => setEditingShift(null);
 
-  const closeEditModal = () => {
-    setEditModalOpen(false);
-    setEditingShift(null);
-  };
-
+  // ── Handlers de confirmación (solo para eliminar) ───────────────────────────
   const openConfirm = (title: string, message: string, action: () => Promise<void>) => {
     setConfirmTitle(title);
     setConfirmMessage(message);
-    setConfirmAction(() => action); // Usar patrón de función para guardar la función
+    setConfirmAction(() => action);
     setConfirmOpen(true);
   };
 
   const closeConfirm = () => {
     if (confirmLoading) return;
     setConfirmOpen(false);
-    setConfirmAction(null); // Ahora null es válido
+    setConfirmAction(null);
     setConfirmTitle("");
     setConfirmMessage("");
   };
@@ -109,7 +97,7 @@ export default function Dashboard() {
       setConfirmLoading(true);
       await confirmAction();
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/shifts"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/shifts"]          }),
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] }),
       ]);
       notify.success("Operación realizada correctamente");
@@ -122,58 +110,12 @@ export default function Dashboard() {
     }
   };
 
-  const requestSaveShift = (payload: Partial<Shift>) => {
-    const isNew = !payload.id;
-    const title = isNew ? "Confirmar creación" : "Confirmar actualización";
-    const message = isNew
-      ? `Crear turno para agente ${payload.officerId} el ${payload.date}?`
-      : `Actualizar turno ${payload.id} para agente ${payload.officerId}?`;
-
-    openConfirm(title, message, async () => {
-      if (isNew) {
-        await createShift({
-          officerId: payload.officerId,
-          beatId: payload.beatId,
-          date: payload.date,
-          startTime: payload.startTime,
-          endTime: payload.endTime,
-          notes: payload.notes,
-        });
-      } else {
-        await updateShift(payload.id!, {
-          officerId: payload.officerId,
-          beatId: payload.beatId,
-          date: payload.date,
-          startTime: payload.startTime,
-          endTime: payload.endTime,
-          notes: payload.notes,
-        });
-      }
-      closeEditModal();
-    });
-  };
-
   const requestDeleteShift = (id: string) => {
-    openConfirm("Confirmar eliminación", `¿Eliminar turno ${id}? Esta acción no puede deshacerse.`, async () => {
-      await deleteShift(id);
-    });
-  };
-
-  const handleSaveShift = (payload: Partial<Shift>) => {
-    if (!payload) return;
-    if (!payload.date || !payload.startTime || !payload.endTime) {
-      notify.error("Fecha, hora inicio y hora fin son obligatorios.");
-      return;
-    }
-    if (!payload.officerId) {
-      notify.error("Seleccione un oficial.");
-      return;
-    }
-    if (!payload.beatId) {
-      notify.error("Seleccione un cuadrante.");
-      return;
-    }
-    requestSaveShift(payload);
+    openConfirm(
+      "Confirmar eliminación",
+      `¿Eliminar turno ${id}? Esta acción no puede deshacerse.`,
+      async () => { await deleteShift(id); }
+    );
   };
 
   return (
@@ -188,7 +130,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-4 sm:mt-0 flex space-x-3">
             <Button
-              onClick={() => { setIsNewShiftModalOpen(true); }}
+              onClick={() => setIsNewShiftModalOpen(true)}
               className="bg-police-blue-600 hover:bg-police-blue-700"
               data-testid="button-new-shift"
             >
@@ -209,17 +151,19 @@ export default function Dashboard() {
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatsCard title="En Servicio"        value={stats?.onDuty       || 0} icon="user-check"          iconBg="bg-green-100"  iconColor="text-green-600"  testId="stats-on-duty"      />
-          <StatsCard title="Fuera de Servicio"  value={stats?.offDuty      || 0} icon="clock"               iconBg="bg-yellow-100" iconColor="text-yellow-600" testId="stats-off-duty"     />
-          <StatsCard title="Brechas de Cobertura" value={stats?.gaps       || 0} icon="exclamation-triangle" iconBg="bg-red-100"    iconColor="text-red-600"    testId="stats-gaps"         />
-          <StatsCard title="Turnos de Hoy"      value={stats?.todayShifts  || 0} icon="calendar-day"        iconBg="bg-blue-100"   iconColor="text-blue-600"   testId="stats-today-shifts" />
+          <StatsCard title="En Servicio"           value={stats?.onDuty      || 0} icon="user-check"           iconBg="bg-green-100"  iconColor="text-green-600"  testId="stats-on-duty"      />
+          <StatsCard title="Fuera de Servicio"     value={stats?.offDuty     || 0} icon="clock"                iconBg="bg-yellow-100" iconColor="text-yellow-600" testId="stats-off-duty"     />
+          <StatsCard title="Brechas de Cobertura"  value={stats?.gaps        || 0} icon="exclamation-triangle" iconBg="bg-red-100"    iconColor="text-red-600"    testId="stats-gaps"         />
+          <StatsCard title="Turnos de Hoy"         value={stats?.todayShifts || 0} icon="calendar-day"         iconBg="bg-blue-100"   iconColor="text-blue-600"   testId="stats-today-shifts" />
         </div>
 
         {/* Turnos de hoy */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Estado Actual de Turnos</h3>
-            <span className="text-xs text-gray-400">{new Date().toLocaleDateString("es-ES", { weekday:"long", day:"numeric", month:"long" })}</span>
+            <span className="text-xs text-gray-400">
+              {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
+            </span>
           </div>
           <div className="p-6">
             {currentShifts.length === 0 ? (
@@ -229,12 +173,21 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3" data-testid="current-shifts">
                 {currentShifts.map(({ shift, officer, beat }) => (
-                  <div key={shift.id}
-                    className={`flex items-center justify-between p-4 rounded-lg border ${shift.status === "active" ? "bg-green-50 border-green-200" : shift.officerId ? "bg-blue-50  border-blue-200" : "bg-red-50   border-red-200"}`}
+                  <div
+                    key={shift.id}
+                    className={`flex items-center justify-between p-4 rounded-lg border ${
+                      shift.status === "active"
+                        ? "bg-green-50 border-green-200"
+                        : shift.officerId
+                          ? "bg-blue-50 border-blue-200"
+                          : "bg-red-50 border-red-200"
+                    }`}
                     data-testid={`shift-${shift.id}`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${shift.status === "active" ? "bg-green-500" : shift.officerId ? "bg-blue-500" : "bg-red-500"}`} />
+                      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                        shift.status === "active" ? "bg-green-500" : shift.officerId ? "bg-blue-500" : "bg-red-500"
+                      }`} />
                       <div>
                         <p className="font-medium text-gray-900">{beat?.name || "Cuadrante sin asignar"}</p>
                         <p className="text-sm text-gray-600">
@@ -250,7 +203,13 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Badge className={shift.status === "active" ? "bg-green-100 text-green-800" : shift.officerId ? "bg-blue-100  text-blue-800" : "bg-red-100   text-red-800"}>
+                      <Badge className={
+                        shift.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : shift.officerId
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-red-100 text-red-800"
+                      }>
                         {shift.status === "active" ? "Activo" : shift.officerId ? "Programado" : "Sin cobertura"}
                       </Badge>
 
@@ -283,7 +242,6 @@ export default function Dashboard() {
                     <Badge className="bg-blue-100 text-blue-800">{circ.onDuty}/{circ.count}</Badge>
                   </div>
                   <p className="text-sm text-gray-500 mb-3">Cuadrantes: {circ.cuadrantes}</p>
-                  {/* Barra de progreso */}
                   <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
                     <div
                       className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
@@ -308,8 +266,11 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {puestoStats.map(puesto => (
-                <div key={puesto.name} className="p-4 border border-gray-200 rounded-lg"
-                  data-testid={`puesto-${puesto.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                <div
+                  key={puesto.name}
+                  className="p-4 border border-gray-200 rounded-lg"
+                  data-testid={`puesto-${puesto.name.toLowerCase().replace(/\s+/g, "-")}`}
+                >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-gray-900">{puesto.name}</h4>
                     <Badge className="bg-purple-100 text-purple-800">{puesto.onDuty}/{puesto.total}</Badge>
@@ -332,64 +293,19 @@ export default function Dashboard() {
 
       </div>
 
+      {/* ── Modales ─────────────────────────────────────────────────────────── */}
+
       <NewShiftModal
         isOpen={isNewShiftModalOpen}
         onClose={() => setIsNewShiftModalOpen(false)}
       />
 
-      {/* Edit/Create modal inline */}
-      {editModalOpen && editingShift && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black opacity-40" onClick={closeEditModal} />
-          <div className="relative bg-white rounded-lg shadow-lg w-[720px] max-w-full p-6 z-10">
-            <h3 className="text-lg font-semibold mb-4">{editingShift.id ? `Editar turno ${editingShift.id}` : "Crear turno"}</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <label>
-                Agente
-                <select className="w-full mt-1" value={editingShift.officerId ?? ""} onChange={e => setEditingShift({ ...editingShift, officerId: e.target.value })}>
-                  <option value="">-- seleccione --</option>
-                  {officers?.map(o => <option key={o.id} value={o.id}>{o.name} ({o.badge})</option>)}
-                </select>
-              </label>
-
-              <label>
-                Cuadrante
-                <select className="w-full mt-1" value={editingShift.beatId ?? ""} onChange={e => setEditingShift({ ...editingShift, beatId: e.target.value })}>
-                  <option value="">-- seleccione --</option>
-                  {beats?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </label>
-
-              <label>
-                Fecha
-                <input type="date" className="w-full mt-1" value={editingShift.date ?? ""} onChange={e => setEditingShift({ ...editingShift, date: e.target.value })} />
-              </label>
-
-              <div />
-
-              <label>
-                Inicio
-                <input type="time" className="w-full mt-1" value={editingShift.startTime ?? ""} onChange={e => setEditingShift({ ...editingShift, startTime: e.target.value })} />
-              </label>
-
-              <label>
-                Fin
-                <input type="time" className="w-full mt-1" value={editingShift.endTime ?? ""} onChange={e => setEditingShift({ ...editingShift, endTime: e.target.value })} />
-              </label>
-
-              <label className="col-span-2">
-                Observaciones
-                <input type="text" className="w-full mt-1" value={editingShift.notes ?? ""} onChange={e => setEditingShift({ ...editingShift, notes: e.target.value })} />
-              </label>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-3">
-              <Button variant="ghost" onClick={closeEditModal}>Cancelar</Button>
-              <Button onClick={() => handleSaveShift(editingShift)}>Guardar</Button>
-            </div>
-          </div>
-        </div>
+      {editingShift && (
+        <EditShiftModal
+          isOpen={!!editingShift}
+          onClose={closeEditModal}
+          shift={editingShift}
+        />
       )}
 
       <ConfirmationModal
