@@ -85,24 +85,14 @@ public class TurnosController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CrearTurnoDto dto)
     {
         var rol = User.FindFirst(ClaimTypes.Role)?.Value;
-        if (rol == "Supervisor")
-        {
-            var userCirc = await GetCircunscripcionDelUsuarioAsync();
-            
-            // Validar Agente
-            var agent = await _db.Agentes.AsNoTracking().FirstOrDefaultAsync(a => a.ID_Agente == dto.ID_Agente);
-            if (agent == null) return NotFound("Agente no encontrado.");
-            
-            var agentCirc = CuadranteMapping.GetCircunscripcion(agent.ID_Cuadrante);
-            if (userCirc != agentCirc)
-                return Forbid("No puede asignar turnos a agentes de otra circunscripción.");
+        var agenteId = await GetAgenteIdAsync();
+        
+        var enrichedDto = dto with { 
+            RequesterRole = rol, 
+            RequesterAgenteId = agenteId 
+        };
 
-            // Validar Cuadrante de destino
-            var targetCirc = CuadranteMapping.GetCircunscripcion(dto.ID_Cuadrante);
-            if (userCirc != targetCirc)
-                return Forbid("No puede asignar turnos en cuadrantes de otra circunscripción.");
-        }
-        return await ResultFromService(async () => await _turnoService.CreateOrUpdateForDayAsync(dto));
+        return await ResultFromService(async () => await _turnoService.CreateOrUpdateForDayAsync(enrichedDto));
     }
 
     [HttpPost("batch")]
@@ -124,22 +114,14 @@ public class TurnosController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] ActualizarTurnoDto dto)
     {
         var rol = User.FindFirst(ClaimTypes.Role)?.Value;
-        if (rol == "Supervisor")
-        {
-            var turno = await _turnoService.GetByIdAsync(id);
-            if (turno == null) return NotFound("Turno no encontrado.");
-            
-            var userCirc = await GetCircunscripcionDelUsuarioAsync();
-            var agent = await _db.Agentes.AsNoTracking().FirstOrDefaultAsync(a => a.ID_Agente == turno.ID_Agente);
-            
-            if (agent != null)
-            {
-                var targetCirc = CuadranteMapping.GetCircunscripcion(agent.ID_Cuadrante);
-                if (userCirc != targetCirc)
-                    return Forbid("No puede editar turnos de agentes de otra circunscripción.");
-            }
-        }
-        return await ResultFromService(async () => await _turnoService.UpdateAsync(id, dto));
+        var agenteId = await GetAgenteIdAsync();
+        
+        var enrichedDto = dto with { 
+            RequesterRole = rol, 
+            RequesterAgenteId = agenteId 
+        };
+
+        return await ResultFromService(async () => await _turnoService.UpdateAsync(id, enrichedDto));
     }
 
     [HttpDelete("{id:int}")]
@@ -147,22 +129,9 @@ public class TurnosController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var rol = User.FindFirst(ClaimTypes.Role)?.Value;
-        if (rol == "Supervisor")
-        {
-            var turno = await _turnoService.GetByIdAsync(id);
-            if (turno == null) return NotFound("Turno no encontrado.");
+        var agenteId = await GetAgenteIdAsync();
 
-            var userCirc = await GetCircunscripcionDelUsuarioAsync();
-            var agent = await _db.Agentes.AsNoTracking().FirstOrDefaultAsync(a => a.ID_Agente == turno.ID_Agente);
-            
-            if (agent != null)
-            {
-                var targetCirc = CuadranteMapping.GetCircunscripcion(agent.ID_Cuadrante);
-                if (userCirc != targetCirc)
-                    return Forbid("No puede eliminar turnos de agentes de otra circunscripción.");
-            }
-        }
-        return await ResultFromService(async () => { await _turnoService.DeleteAsync(id); });
+        return await ResultFromService(async () => { await _turnoService.DeleteAsync(id, rol, agenteId); });
     }
 
     

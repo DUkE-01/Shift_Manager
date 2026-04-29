@@ -10,6 +10,7 @@ namespace Shift_Manager.Server.Domain.Entities
 
         public required string Nombre { get; set; }
         public string? Sector { get; set; }
+        public int Circunscripcion { get; set; }
         public bool Activo { get; set; }
         public DateTime FechaCreacion { get; set; }
 

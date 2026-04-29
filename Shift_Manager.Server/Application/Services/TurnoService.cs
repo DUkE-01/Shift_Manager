@@ -5,6 +5,8 @@ using Shift_Manager.Server.Application.Interfaces;
 using Shift_Manager.Server.Domain.Common.Exceptions;
 using Shift_Manager.Server.Domain.Entities;
 using Shift_Manager.Server.Extensions;
+using Shift_Manager.Server.Domain.Common.Helpers;
+using Shift_Manager.Server.Infrastructure.Context;
 
 namespace Shift_Manager.Server.Application.Services
 {
@@ -12,19 +14,25 @@ namespace Shift_Manager.Server.Application.Services
     {
         private readonly ITurnoRepository _turnoRepository;
         private readonly IHorarioRepository _horarioRepository;
+        private readonly IGenericRepository<Agente> _agenteRepository;
         private readonly INotificationService _notificationService;
         private readonly ILogger<TurnoService> _logger;
+        private readonly ShiftManagerDbContext _db;
 
         public TurnoService(
             ITurnoRepository turnoRepository, 
-            IHorarioRepository horarioRepository, 
+            IHorarioRepository horarioRepository,
+            IGenericRepository<Agente> agenteRepository,
             INotificationService notificationService,
-            ILogger<TurnoService> logger)
+            ILogger<TurnoService> logger,
+            ShiftManagerDbContext db)
         {
             _turnoRepository = turnoRepository;
             _horarioRepository = horarioRepository;
+            _agenteRepository = agenteRepository;
             _notificationService = notificationService;
             _logger = logger;
+            _db = db;
         }
 
         public async Task<PagedResult<TurnoDto>> GetPagedAsync(int page, int pageSize)
@@ -65,20 +73,52 @@ namespace Shift_Manager.Server.Application.Services
             if (dto.ID_Agente <= 0)
                 throw new BusinessRuleException("AgenteId inválido.");
 
+            // 1. Validar Jurisdicción si es Supervisor
+            if (dto.RequesterRole == "Supervisor")
+            {
+                if (dto.RequesterAgenteId == null)
+                    throw new BusinessRuleException("El ID del agente solicitante es necesario para validar la jurisdicción.");
+
+                var supervisor = await _agenteRepository.GetByIdAsync(dto.RequesterAgenteId.Value);
+                var targetAgente = await _agenteRepository.GetByIdAsync(dto.ID_Agente);
+
+                if (supervisor == null || targetAgente == null)
+                    throw new BusinessRuleException("Supervisor o Agente no encontrado.");
+
+                var supervisorCirc = CuadranteMapping.GetCircunscripcion(supervisor.ID_Cuadrante);
+                var targetCirc = CuadranteMapping.GetCircunscripcion(targetAgente.ID_Cuadrante);
+
+                if (supervisorCirc != targetCirc)
+                    throw new BusinessRuleException($"Jurisdicción inválida. El agente pertenece a la Circunscripción {targetCirc}, pero usted solo tiene autoridad sobre la {supervisorCirc}.");
+            }
+
             // Permitir hasta 1 día de atraso para registros tardíos
-            // Usamos UtcNow.Date para ser consistentes con la BD que es PostgreSQL timestamptz
             if (dto.FechaProgramadaInicio.Date < DateTime.UtcNow.Date.AddDays(-1))
                 throw new BusinessRuleException("No se pueden crear turnos con más de 1 día de antigüedad.");
 
-            // Buscar si el agente ya tiene un turno en esa fecha (en cualquier cuadrante)
+            // 2. Buscar si el agente ya tiene un turno en esa fecha
             var existingTurnos = await _turnoRepository.GetByAgenteAsync(dto.ID_Agente);
             var existing = existingTurnos.FirstOrDefault(t => 
                 t.FechaProgramadaInicio.Date == dto.FechaProgramadaInicio.Date);
 
-            var turno = existing ?? new Turno();
+            // 3. Aplicar Jerarquía
+            if (existing != null)
+            {
+                if (dto.RequesterRole == "Supervisor" && existing.CreatedByRole == "Administrador")
+                {
+                    throw new BusinessRuleException("No puede sobreescribir un turno creado por un Administrador. Por favor, utilice la opción de 'Editar' para realizar cambios manuales.");
+                }
 
-            // Si ya existe pero en otro cuadrante, se actualizará al nuevo cuadrante
+                if (dto.RequesterRole == "Administrador" && existing.CreatedByRole == "Supervisor")
+                {
+                    _logger.LogInformation("Admin sobreescribiendo turno de Supervisor para agente {AgenteId}", dto.ID_Agente);
+                    // El Admin pisa al Supervisor automáticamente.
+                }
+            }
+
+            var turno = existing ?? new Turno();
             turno.UpdateFromDto(dto);
+            turno.CreatedByRole = dto.RequesterRole ?? "Sistema";
 
             if (existing is null)
             {
@@ -89,7 +129,7 @@ namespace Shift_Manager.Server.Application.Services
                 await _turnoRepository.UpdateAsync(turno);
             }
 
-            // Sincronizar con la tabla de Horarios para el Dashboard y Calendario
+            // Sincronizar con la tabla de Horarios
             await SyncWithHorariosAsync(turno, dto.TipoTurno);
 
             // Enviar notificaciones
@@ -166,6 +206,25 @@ namespace Shift_Manager.Server.Application.Services
             var turno = await _turnoRepository.GetByIdAsync(id)
                 ?? throw new NotFoundException($"Turno {id} no encontrado");
 
+            // 1. Validar Jurisdicción si es Supervisor
+            if (dto.RequesterRole == "Supervisor")
+            {
+                if (dto.RequesterAgenteId == null)
+                    throw new BusinessRuleException("El ID del agente solicitante es necesario para validar la jurisdicción.");
+
+                var supervisor = await _agenteRepository.GetByIdAsync(dto.RequesterAgenteId.Value);
+                var targetAgente = await _agenteRepository.GetByIdAsync(turno.ID_Agente);
+
+                if (supervisor == null || targetAgente == null)
+                    throw new BusinessRuleException("Supervisor o Agente no encontrado.");
+
+                var supervisorCirc = CuadranteMapping.GetCircunscripcion(supervisor.ID_Cuadrante);
+                var targetCirc = CuadranteMapping.GetCircunscripcion(targetAgente.ID_Cuadrante);
+
+                if (supervisorCirc != targetCirc)
+                    throw new BusinessRuleException($"Jurisdicción inválida. No puede editar turnos de agentes fuera de su Circunscripción ({supervisorCirc}).");
+            }
+
             turno.UpdateFromDto(dto);
             await _turnoRepository.UpdateAsync(turno);
 
@@ -178,8 +237,30 @@ namespace Shift_Manager.Server.Application.Services
             return turno.ToDto();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int id, string? requesterRole = null, int? requesterAgenteId = null)
         {
+            var turno = await _turnoRepository.GetByIdAsync(id)
+                ?? throw new NotFoundException($"Turno {id} no encontrado");
+
+            // 1. Validar Jurisdicción si es Supervisor
+            if (requesterRole == "Supervisor")
+            {
+                if (requesterAgenteId == null)
+                    throw new BusinessRuleException("El ID del agente solicitante es necesario para validar la jurisdicción.");
+
+                var supervisor = await _agenteRepository.GetByIdAsync(requesterAgenteId.Value);
+                var targetAgente = await _agenteRepository.GetByIdAsync(turno.ID_Agente);
+
+                if (supervisor == null || targetAgente == null)
+                    throw new BusinessRuleException("Supervisor o Agente no encontrado.");
+
+                var supervisorCirc = CuadranteMapping.GetCircunscripcion(supervisor.ID_Cuadrante);
+                var targetCirc = CuadranteMapping.GetCircunscripcion(targetAgente.ID_Cuadrante);
+
+                if (supervisorCirc != targetCirc)
+                    throw new BusinessRuleException($"Jurisdicción inválida. No puede eliminar turnos de agentes fuera de su Circunscripción ({supervisorCirc}).");
+            }
+
             // Eliminar horario asociado primero
             var horarios = await _horarioRepository.GetAllAsync();
             var horario = horarios.FirstOrDefault(h => h.ID_Turno == id);

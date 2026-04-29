@@ -1,4 +1,4 @@
-﻿using Shift_Manager.Server.Application.DTOs.Turnos;
+using Shift_Manager.Server.Application.DTOs.Turnos;
 using Shift_Manager.Server.Extensions;
 
 namespace Shift_Manager.Server.Application.Interfaces
@@ -19,6 +19,6 @@ namespace Shift_Manager.Server.Application.Interfaces
 
         Task<TurnoDto> UpdateAsync(int id, ActualizarTurnoDto dto);
 
-        Task DeleteAsync(int id);
+        Task DeleteAsync(int id, string? requesterRole = null, int? requesterAgenteId = null);
     }
 }

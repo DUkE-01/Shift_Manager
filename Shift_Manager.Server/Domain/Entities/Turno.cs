@@ -22,6 +22,7 @@ namespace Shift_Manager.Server.Domain.Entities
 
         public string Estado { get; set; } = string.Empty;
         public string? Observaciones { get; set; }
+        public string? CreatedByRole { get; set; }
         public DateTime FechaCreacion { get; set; }
 
         public byte[] RowVersion { get; set; } = null!;

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Shift_Manager.Server.Application.DTOs.Turnos
 {
@@ -17,5 +17,9 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
         public DateTime FechaProgramadaFin { get; set; }
         public string? TipoTurno { get; set; } = "diurno";
         public string? Observaciones { get; set; }
+        
+        // Metadata para jerarquías
+        public string? RequesterRole { get; set; }
+        public int? RequesterAgenteId { get; set; }
     }
 }
