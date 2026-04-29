@@ -68,6 +68,29 @@ namespace Shift_Manager.Server.Application.Services
         return turnos.Select(t => t.ToDto());
     }
 
+
+public async Task<IEnumerable<TurnoDto>> CreateBatchAsync(List<CrearTurnoDto> dtos)
+{
+    var results = new List<TurnoDto>();
+
+    foreach (var dto in dtos ?? new List<CrearTurnoDto>())
+    {
+        try
+        {
+            var turno = await CreateOrUpdateForDayAsync(dto);
+            results.Add(turno);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Error procesando turno batch para agente {AgenteId} en {Fecha}",
+                dto.ID_Agente, dto.FechaProgramadaInicio);
+        }
+    }
+
+    return results;
+}
+
     public async Task<TurnoDto> CreateOrUpdateForDayAsync(CrearTurnoDto dto)
     {
         if (dto.ID_Agente <= 0)

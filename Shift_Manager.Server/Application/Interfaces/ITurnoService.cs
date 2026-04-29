@@ -15,7 +15,7 @@ namespace Shift_Manager.Server.Application.Interfaces
 
         Task<TurnoDto> CreateOrUpdateForDayAsync(CrearTurnoDto dto);
 
-        Task<IEnumerable<TurnoDto>> CreateBatchAsync(List<CrearTurnoDto> dtos);
+        Task<IEnumerable<TurnoDto>> CreateBatchAsync(List<CrearTurnoDto> dto);
 
         Task<TurnoDto> UpdateAsync(int id, ActualizarTurnoDto dto);
 
