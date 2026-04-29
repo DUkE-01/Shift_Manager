@@ -81,38 +81,45 @@ public class TurnosController : ControllerBase
 
 
     [HttpPost]
-    [Authorize(Roles = "Administrador,Supervisor")]
-    public async Task<IActionResult> Create([FromBody] CrearTurnoDto dto)
+[Authorize(Roles = "Administrador,Supervisor")]
+public async Task<IActionResult> Create([FromBody] CrearTurnoDto dto)
+{
+    return await ResultFromService(async () =>
     {
         var rol = User.FindFirst(ClaimTypes.Role)?.Value;
         var agenteId = await GetAgenteIdAsync();
-        
-        var enrichedDto = dto with { 
-            RequesterRole = rol, 
-            RequesterAgenteId = agenteId 
+
+        var enrichedDto = dto with
+        {
+            RequesterRole = rol,
+            RequesterAgenteId = agenteId
         };
 
-        return await ResultFromService(async () => await _turnoService.CreateOrUpdateForDayAsync(enrichedDto));
-    }
+        return await _turnoService.CreateOrUpdateForDayAsync(enrichedDto);
+    });
+}
 
     [HttpPost("batch")]
-    [Authorize(Roles = "Administrador,Supervisor")]
-    public async Task<IActionResult> CreateBatch([FromBody] List<CrearTurnoDto> dtos)
-    {
-        if (dtos == null || dtos.Count == 0)
-            return BadRequest("La lista de turnos no puede estar vacía.");
+[Authorize(Roles = "Administrador,Supervisor")]
+public async Task<IActionResult> CreateBatch([FromBody] List<CrearTurnoDto> dtos)
+{
+    if (dtos == null || dtos.Count == 0)
+        return BadRequest("La lista de turnos no puede estar vacía.");
 
+    return await ResultFromService(async () =>
+    {
         var rol = User.FindFirst(ClaimTypes.Role)?.Value;
         var agenteId = await GetAgenteIdAsync();
 
-        // Enriquecemos todos los DTOs del lote con la info del solicitante
-        var enrichedDtos = dtos.Select(d => d with { 
-            RequesterRole = rol, 
-            RequesterAgenteId = agenteId 
+        var enrichedDtos = dtos.Select(d => d with
+        {
+            RequesterRole = rol,
+            RequesterAgenteId = agenteId
         }).ToList();
-        
-        return await ResultFromService(async () => await _turnoService.CreateBatchAsync(enrichedDtos));
-    }
+
+        return await _turnoService.CreateBatchAsync(enrichedDtos);
+    });
+}
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Administrador,Supervisor")]
