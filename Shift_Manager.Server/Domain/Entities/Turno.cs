@@ -20,22 +20,20 @@ namespace Shift_Manager.Server.Domain.Entities
 
         public string Estado { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Tipo de turno: "diurno", "vespertino_lj", "vespertino_vd", "nocturno"
-        /// </summary>
-        [MaxLength(20)]
-        public string TipoTurno { get; set; } = "diurno";
-
         public string? Observaciones { get; set; }
+
         public string? CreatedByRole { get; set; }
+
         public DateTime FechaCreacion { get; set; }
 
         public byte[] RowVersion { get; set; } = null!;
 
         public Agente Agente { get; set; } = null!;
+
         public Cuadrante Cuadrante { get; set; } = null!;
 
         public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
+        
         public ICollection<Horario> Horarios { get; set; } = new List<Horario>();
     }
 }

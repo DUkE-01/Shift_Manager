@@ -18,7 +18,6 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
             FechaFin      = turno.FechaProgramadaFin,
             Estado        = turno.Estado ?? string.Empty,
             Observaciones = turno.Observaciones,
-            TipoTurno     = turno.TipoTurno,
             CreatedByRole = turno.CreatedByRole,
         };
 
@@ -29,12 +28,6 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
             turno.ID_Agente             = dto.ID_Agente;
             turno.ID_Cuadrante          = dto.ID_Cuadrante;
             turno.Observaciones         = dto.Observaciones;
-
-            // ── TipoTurno: siempre persistirlo ──────────────────────────────────
-            if (!string.IsNullOrWhiteSpace(dto.TipoTurno))
-                turno.TipoTurno = dto.TipoTurno;
-            else if (string.IsNullOrWhiteSpace(turno.TipoTurno))
-                turno.TipoTurno = "diurno"; // fallback sólo si no existe valor previo
 
             if (string.IsNullOrEmpty(turno.Estado))
                 turno.Estado = "Programado";
@@ -56,10 +49,6 @@ namespace Shift_Manager.Server.Application.DTOs.Turnos
                 turno.Observaciones = dto.Observaciones;
             if (!string.IsNullOrEmpty(dto.Estado))
                 turno.Estado = dto.Estado;
-
-            // ── TipoTurno en actualización ───────────────────────────────────────
-            if (!string.IsNullOrWhiteSpace(dto.TipoTurno))
-                turno.TipoTurno = dto.TipoTurno;
         }
     }
 }
